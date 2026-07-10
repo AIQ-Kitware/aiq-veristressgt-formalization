@@ -1,0 +1,331 @@
+# formalization.yaml (v0.3): repo-root metadata for an AI-authored formalization project.
+# Schema reference: https://github.com/mathlib-initiative/formalization.yaml
+# Mirrors aiq-dkps-formalization/formalization.yaml.
+
+version: "v0.3"
+
+project:
+  name: "AIQ VeriStressGT formalization: robustness-certificate libraries for the UCLA TA1 thread"
+  authors:
+    - "AIQ Kitware"
+  license: "Apache-2.0"
+  repository: "https://github.com/AIQ-Kitware/aiq-eval-runner (formalizations/veristressgt)"
+  status_note: >
+    PROVED. All theorems compile with zero `sorry` (`lake build` green); axiom-clean
+    ({propext, Classical.choice, Quot.sound}) per AxiomAudit.lean / scripts/check.sh.
+    Following AUDIT.md and GUIDANCE-F2-F4b.md, the second audit pass CLOSED F4b (the
+    whole-network big-M encoding is wired to IBP box validity: ExactMILP/Network.lean —
+    advSet, bigMReach_sound/complete, netTrace_mem_netBoxes) and F2 for the LINEAR
+    attention construction (SelfAttention/LinearDominanceBlock.lean — the certificate is
+    DERIVED from per-token deviations, no assumed Lipschitz constant). For the softmax
+    fixed-pattern construction the score-sensitivity (C.1) and the pooling coefficient
+    (C.3) are formalized (SelfAttention/FixedPatternBlock.lean); the C.3 anchor records
+    the audit finding that the honest leading coefficient is n/2, not the code's n/4 (new
+    Family-A edge attn-Lattn-n4-pooling). The softmax Lipschitz consumer (F2-B) is CLOSED and
+    UNCONDITIONAL (SoftmaxLipschitz.lean: hasFDerivAt_softmax + lipschitzWith_softmax, ½ tight
+    per arXiv:2510.23012), and per AUDIT2.md the fixed-pattern chain is now ASSEMBLED (G1):
+    FixedPatternBlock.Z_deviation/Z_deviation_n2 derive ‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV)+δV, so
+    the softmax construction certifies from construction-level quantities and the n/2 edge anchor
+    is a machine-checked derivation. Remaining items are non-Lean (UCLA n/4 adjudication, outside
+    faithfulness review). This file records the target structure, the source
+    theorems, and the assumption->relaxation edges to the empirical repo
+    (ta1/VeriStressGT). See README.md, theorem-map.md, ucla-formalization-edges.md,
+    AUDIT.md, and GUIDANCE-F2-F4b.md.
+
+sources:
+  - title: "Stress-Testing Neural Network Verifiers with Provably Robust Instances"
+    authors: ["Troxell", "Alexandr", "Hunt", "Lei", "Montúfar"]
+    id: "UCLA VeriStressGT (arXiv:2605.17153)"
+    type: "research paper"
+    role: "The empirical framework being formalized (provably-robust instances + Difficulty Profile)."
+  - title: "Robustness Verification of Polynomial Neural Networks"
+    authors: ["Alexandr", "Duan", "Montúfar"]
+    id: "arXiv:2602.06105"
+    type: "research paper"
+    role: "Theory behind polynomial.algebraic_boundary; ED-degree exact method (T6)."
+  - title: "Lipschitz-Margin Training"
+    authors: ["Tsuzuku", "Sato", "Sugiyama"]
+    id: "arXiv:1802.04034"
+    type: "prior theorem (T1)"
+    prior_work: "LipschitzMargin/ — scalar margin certificate."
+  - title: "The Lipschitz Constant of Self-Attention"
+    authors: ["Kim", "Papamakarios", "Mnih"]
+    id: "arXiv:2006.04710"
+    type: "prior theorem (T2)"
+    prior_work: "SelfAttention/ — L_attn sensitivity; softmax-Jacobian bound in ForMathlib."
+  - title: "Evaluating Robustness of Neural Networks with Mixed Integer Programming"
+    authors: ["Tjeng", "Xiao", "Tedrake"]
+    id: "arXiv:1711.07356"
+    type: "prior theorem (T3)"
+    prior_work: "ExactMILP/ — big-M encoding faithfulness."
+  - title: "On the Effectiveness of Interval Bound Propagation..."
+    authors: ["Gowal", "et al."]
+    id: "arXiv:1810.12715"
+    type: "prior theorem (T4)"
+    prior_work: "IntervalBounds/ + ForMathlib IBP soundness."
+  - title: "Beta-CROWN / CROWN"
+    authors: ["Wang", "Zhang", "Xu", "et al."]
+    id: "arXiv:2103.06624 / arXiv:1811.00866"
+    type: "prior theorem (T5)"
+    prior_work: "Verifier/ — sound/complete specification the card stands on."
+
+status:
+  repository_build:
+    note: >
+      VERIFIED GREEN, ZERO SORRY (last run 2026-07-10 via scripts/check.sh): `lake build`
+      clean, no sorry/admit, all 56 public theorems axiom-clean {propext, Classical.choice,
+      Quot.sound}. Both outside-audit gaps are closed in Lean: F4b (whole-network big-M wired
+      to IBP box validity, ExactMILP/Network.lean) and F2 for BOTH attention constructions —
+      linear (SelfAttention/LinearDominanceBlock.lean, DERIVED certificate) and softmax
+      fixed-pattern (SelfAttention/FixedPatternBlock.lean assembles the output-deviation bound
+      Z_deviation/Z_deviation_n2, consuming ForMathlib.lipschitzWith_softmax — the tight
+      ½-Lipschitz softmax result whose Fréchet derivative hasFDerivAt_softmax is proved on
+      EuclideanSpace). The flagship softmax_jacobian_opNorm_le_half (spectral bound, Rayleigh +
+      Popoviciu) is the R1 seed. Remaining items are NON-LEAN: UCLA n/4 adjudication (now
+      Lean-anchored by Z_deviation_n2) and outside faithfulness review. F5 (git) deferred by request.
+    toolchain: "leanprover/lean4:v4.31.0-rc2 (pinned to match aiq-dkps-formalization)"
+    build_commands:
+      - "bash setup_lean.sh"
+      - "lake exe cache get   # fetch prebuilt Mathlib oleans"
+      - "lake build"
+  scope: >
+    Seven Lean libraries, one per certificate family (T1-T6) plus a shared
+    ForMathlib staging library. Each library states its paper-facing certificate
+    theorem(s) fully proved (zero `sorry`), carrying the load-bearing edges as explicit
+    hypotheses (e.g. LipschitzMargin.dccnn_robust_of_upper_bound takes the
+    upper-bound premise the power-iteration `L̂` does not satisfy).
+  # All 56 public theorems are proved (sorry_count 0) and axiom-clean
+  # ({propext, Classical.choice, Quot.sound}) — verified by AxiomAudit.lean /
+  # scripts/check.sh (30 first pass + 16 F2/F4b closure + 6 SoftmaxLipschitz + 4 FixedPatternBlock G1).
+  # F2 (both attention constructions, incl. softmax LipschitzWith ½ and the assembled
+  # fixed-pattern output bound) and F4b are fully closed.
+  # `tier` follows AUDIT.md §3 (substantive / edge-specialization / spec-rewrite).
+  # Representative targets:
+  main_targets:
+    - declaration: "VeriStressGT.ForMathlib.softmax_jacobian_opNorm_le_half"
+      file: "ForMathlib/Analysis/SoftmaxJacobianBound.lean"
+      source: "T2 seed (arXiv:2006.04710)"
+      grounds: "attention.fixed_pattern (the n/4·½ constant)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+      note: "Mathlib upstream candidate; spectral ‖diag a − aaᵀ‖₂ ≤ 1/2 via Rayleigh + Popoviciu."
+    - declaration: "VeriStressGT.ForMathlib.lipschitzWith_softmax"   # + hasFDerivAt_softmax
+      file: "ForMathlib/Analysis/SoftmaxLipschitz.lean"
+      source: "T2 / R2 (arXiv:2510.23012, ½ tight)"
+      grounds: "attention.fixed_pattern middle stage (F2-B CLOSED, unconditional)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+      note: "UNCONDITIONAL LipschitzWith ½ softmax. hasFDerivAt_softmax computes the fderiv on EuclideanSpace (hasFDerivWithinAt_piLp + scalar quotient rule + softmaxJac_mulVec); then mean-value inequality + softmax_jacobian_opNorm_le_half. The completed ForMathlib upstream candidate."
+    - declaration: "VeriStressGT.LipschitzMargin.netLipschitz"
+      file: "LipschitzMargin/DeepContractiveCNN.lean"
+      source: "T1' (Parseval/spectral composition)"
+      grounds: "cnn.deep_contractive_cnn — L = σ_proj·λ^D·‖w_out‖ appears as ∏‖Wᵢ‖₊ (audit F1)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.LipschitzMargin.robust_of_margin_gt"
+      file: "LipschitzMargin/Basic.lean"
+      source: "T1 (arXiv:1802.04034)"
+      grounds: "cnn.deep_contractive_cnn; margin half of attention certs"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.linearDominance_token_bound"
+      file: "SelfAttention/LinearDominance.lean"
+      source: "T2 (arXiv:2006.04710)"
+      grounds: "attention.linear_dominance (softmax-free)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.linearDominance_robust_derived"
+      file: "SelfAttention/LinearDominanceBlock.lean"
+      source: "T2 (arXiv:2006.04710)"
+      grounds: "attention.linear_dominance — cert DERIVED from dw/dV/B_max, no assumed L (audit F2)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.FixedPatternAttn.Z_deviation_n2"   # + Z_deviation, attn_dist_le, attn_l1
+      file: "SelfAttention/FixedPatternBlock.lean"
+      source: "T2 (arXiv:2006.04710) — compute_L_attn assembly (AUDIT2 G1)"
+      grounds: "attention.fixed_pattern — DERIVED output bound ‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV)+δV; the Lean anchor for edge attn-Lattn-n4-pooling (honest n/2 vs code's n/4)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.pooling_leading_coeff"
+      file: "SelfAttention/FixedPatternBlock.lean"
+      source: "T2 (arXiv:2006.04710) — pooling arithmetic"
+      grounds: "supporting identity √n·½·√n = n/2 (the coefficient Z_deviation_n2 realizes)"
+      tier: spec-rewrite
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.IntervalBounds.ibp_network_sound"   # + netTrace_mem_netBoxes (every-stage)
+      file: "IntervalBounds/Basic.lean"
+      source: "T4 (arXiv:1810.12715)"
+      grounds: "Difficulty Profile; every-stage form discharges ExactMILP (l,u) validity (F4b CLOSED)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.ExactMILP.bigM_relu_faithful"   # + bigM_relu_complete
+      file: "ExactMILP/Basic.lean"
+      source: "T3 (arXiv:1711.07356)"
+      grounds: "mlp_relu.milp.exact_radius (soundness; completeness in bigM_relu_complete)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.ExactMILP.bigMReach_complete"   # + bigMReach_sound, bigM_feasible_iff_netEval
+      file: "ExactMILP/Network.lean"
+      source: "T3 (arXiv:1711.07356) — prose Theorem A"
+      grounds: "mlp_relu.milp.exact_radius — whole-net encoding; IBP box validity discharges (l,u) (F4b)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.AlgebraicBoundary.robust_of_lt_dist_boundary"
+      file: "AlgebraicBoundary/Basic.lean"
+      source: "T6 (arXiv:2602.06105)"
+      grounds: "polynomial.algebraic_boundary"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.Verifier.sound_unsat_robust"
+      file: "Verifier/Spec.lean"
+      source: "T5 (arXiv:2103.06624)"
+      grounds: "the α-β-CROWN card claim (Family-B edges)"
+      tier: spec-rewrite
+      sorry_count: 0
+      axioms: []   # depends on no axioms at all
+
+  verification:
+    method: "AxiomAudit.lean (#print axioms on all 56 public theorems) + scripts/check.sh"
+    last_run: "2026-07-10"
+    result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
+
+  review:
+    status: "self-assessed + two outside passes (AUDIT.md, AUDIT2.md) + closure passes"
+    outside_audit: "AUDIT.md (2026-07-07, F1–F11) + AUDIT2.md (2026-07-09, G1–G9). AUDIT2 verdict: mathematics real, correct, mechanically verified; one Lean gap (G1: fixed-pattern chain unassembled) + doc/hygiene debt. G1 CLOSED 2026-07-10 (FixedPatternBlock.Z_deviation/Z_deviation_n2 assemble the output bound, consuming lipschitzWith_softmax); G2 thereby Lean-evidenced (edge anchor moved to Z_deviation_n2); G3–G7,G9 reconciled. F5 (git) deferred by request."
+    open_gaps:
+      - "UCLA adjudication (NON-LEAN): take the assembled Z_deviation_n2 bound (leading coeff n/2) to UCLA re: compute_L_attn's n/4 — find the halving argument (edge closes as tightness) or confirm the soundness gap (edge attn-Lattn-n4-pooling). Now backed by a machine-checked derivation, not prose."
+      - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
+      - "G8 (upstream shape, optional): restate softmax_jacobian_opNorm_le_half in Loewner form (0 ≤ J ∧ 2•J ≤ 1) for the Mathlib PR — survey §7.1."
+      - "G6 (hygiene, optional): de-duplicate softmaxJac/softmaxJac_mulVec vs private sjJ/sjJ_mulVec."
+    closed_this_pass:
+      - "G1: fixed-pattern output-deviation bound ASSEMBLED (Z_deviation, Z_deviation_n2) — the softmax construction now certifies from construction-level quantities, not an assumed Lipschitz constant."
+      - "G2: attn-Lattn-n4-pooling edge now anchored to the derived bound Z_deviation_n2 (leading coeff n/2), not the standalone identity."
+      - "G3–G5,G7,G9: status reconciliation (file headers, yaml note/scope, ExactMILP NOTE), netTrace docstring (G4), pooling tier (G5), netMap fold-orientation (G7), stable-neuron footnote (G9)."
+    external_lean_survey: "EXTERNAL-LEAN-SURVEY.md (2026-07-09): no drop-in Lean source for R1/R2/R3; girving/interval is the reuse candidate ONLY for the float32-export edge (R9); TorchLean (nktkt/leanx) is a statement/differential-oracle reference (Lean 4.28, sorry'd float layer), not a dependency."
+
+# Edges to the empirical repo. Full tables + severities in ucla-formalization-edges.md.
+# Listed here so the (future) MAGNET runner can surface which assumptions a card stands on.
+edges:
+  - id: dccnn-L-power-iter
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    construction: cnn.deep_contractive_cnn
+    assumption:
+      theorem: "T1' product-of-spectral-norms (needs UPPER bound on ∏‖Wᵢ‖₂) — NOW FORMALIZED (netLipschitz)"
+      lean: VeriStressGT.LipschitzMargin.dccnn_robust_via_net_upper   # premise `‖φ‖₊·∏‖Wᵢ‖₊ ≤ Lhat` (the genuine product; audit F1)
+      prose: prose/lipschitz-margin-certificate.md   # LM-1
+    relaxation:
+      code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/cnn/deep_contractive_cnn.py
+      line: 64
+      informal: "σ̂ from 20-step power iteration is a LOWER bound on ‖W‖₂; unsafe direction, bounded by 10% slack. See edges Appendix A."
+    kind: numeric-estimate
+    severity: high
+  - id: poly-nbc-surrogate
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    construction: polynomial.algebraic_boundary
+    assumption:
+      theorem: "T6 exact distance-to-variety (ED degree, arXiv:2602.06105)"
+      lean: VeriStressGT.AlgebraicBoundary.robust_of_numerical_lower_bound   # premise `distHat ≤ infDist`
+      prose: prose/ed-degree-polynomial-verification.md   # ED-1
+    relaxation:
+      code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/polynomial/algebraic_boundary.py
+      line: 405
+      informal: "50-restart L-BFGS-B 'found no closer boundary point' — one-sided; could miss a nearer real critical point."
+    kind: exact-to-local-search
+    severity: high
+  - id: milp-incomplete-label
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    construction: mlp_relu.milp.exact_radius
+    assumption:
+      theorem: "T3 label sound only if MILP OPTIMAL"
+      lean: VeriStressGT.ExactMILP.label_sound_of_optimal   # premise `advDist = rStar`
+      prose: prose/exact-milp-and-npcompleteness.md   # MILP-2
+    relaxation:
+      code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/mlp_relu/milp/exact_radius.py
+      line: 714
+      informal: "TIME_LIMIT ⇒ INCOMPLETE; code itself warns label 'NOT reliable'."
+    kind: budget-drop
+    severity: high
+  - id: card-verifier-soundness
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    assumption:
+      theorem: "T5 verifier soundness: UNSAT ⟹ robust"
+      lean: VeriStressGT.Verifier.Sound
+      prose: prose/crown-branch-and-bound.md   # CR-1
+    relaxation:
+      code: ta1/VeriStressGT/cards/evaluation.yaml
+      line: 49
+      informal: "Assumed, never checked — exactly what the paper finds violated by float-tolerance bugs."
+    kind: assumed-soundness
+    severity: high
+  # --- added per audit F7 (previously in ucla-formalization-edges.md only) ---
+  - id: milp-rmax-clamp
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    construction: mlp_relu.milp.exact_radius
+    assumption:
+      theorem: "T3 exact radius requires the MILP box to contain r* (not clamped at Rmax)"
+      lean: VeriStressGT.ExactMILP.infDist_inter_closedBall_of_exists_mem_ball   # non-binding Rmax ⟹ infimum unchanged (audit F4b)
+      prose: prose/exact-milp-and-npcompleteness.md   # MILP-1
+    relaxation:
+      code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/mlp_relu/milp/exact_radius.py
+      line: 232
+      informal: "Search clamped to t ≤ Rmax; if r* > Rmax the reported radius is a LOWER bound, not the true infDist."
+    kind: regime-clamp
+    severity: high
+  - id: attn-fixed-pattern-gap
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    construction: attention.fixed_pattern
+    assumption:
+      theorem: "T2 softmax argmax pattern constant on the box"
+      lean: VeriStressGT.SelfAttention.gap_iff_stability_margin   # the gap ⟺ δ_min > ε·C_max equivalence
+      prose: prose/self-attention-lipschitz.md   # SA-3
+    relaxation:
+      code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/attention/fixed_pattern.py
+      line: 82
+      informal: "Coherence inequality 1−μ > 4ε√d+2ε²d checked at X₀ only, as a sufficient proxy for pattern-invariance."
+    kind: proxy-condition
+    severity: med
+  # --- added per audit F2-C.3 (GUIDANCE-F2-F4b.md §F2-C.3): candidate soundness bug ---
+  - id: attn-Lattn-n4-pooling
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    construction: attention.fixed_pattern
+    assumption:
+      theorem: "T2 aggregated L_attn — the DERIVED output bound has leading coefficient n/2"
+      lean: VeriStressGT.SelfAttention.FixedPatternAttn.Z_deviation_n2   # ‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV)+δV
+      prose: prose/self-attention-lipschitz.md   # SA-2
+    relaxation:
+      code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/attention/fixed_pattern.py
+      line: 66
+      informal: >
+        compute_L_attn uses n/4 on the first and third terms of ‖ΔZ‖; the assembled Lean bound
+        Z_deviation_n2 (row-ℓ² √n via sq_sum_le_card_mul_sum_sq × softmax-½ via lipschitzWith_softmax
+        × ℓ¹→ℓ² √n) has leading coefficient n/2 — now a machine-checked derivation, not prose. If
+        no halving argument exists in arXiv:2006.04710, the certified L_attn is ~2× too small on
+        those terms — the UNSAFE direction (a false-UNSAT instance could ship, cushioned by
+        margin_slack). Suspicious numerology: ¼ = maxₐ a(1−a) is the ENTRYWISE softmax-Jacobian
+        bound (the spectral-vs-entrywise trap). Raise with UCLA alongside the Appendix-A power-iteration item.
+    kind: numeric-estimate
+    severity: high
+  - id: card-timeout-incomplete
+    card: ta1/VeriStressGT/cards/evaluation.yaml
+    assumption:
+      theorem: "T5 β-CROWN complete only in the limit (no time bound)"
+      lean: VeriStressGT.Verifier.CompleteInLimit   # completeness stated with no budget
+      prose: prose/crown-branch-and-bound.md   # CR-2
+    relaxation:
+      code: ta1/VeriStressGT/cards/evaluation.yaml
+      line: 69
+      informal: "60 s timeout ⇒ incomplete; hard (high-unstable_frac) instances time out by design."
+    kind: completeness-to-budget
+    severity: med

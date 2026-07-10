@@ -1,0 +1,8 @@
+# Lake build output and fetched dependencies (regenerable via `lake build`;
+# dependency revisions are pinned in lake-manifest.json).
+/.lake/
+
+# Editor / OS cruft
+*.swp
+.DS_Store
+*Zone.Identifier

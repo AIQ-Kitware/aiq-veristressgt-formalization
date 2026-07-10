@@ -1,0 +1,102 @@
+/-
+AxiomAudit.lean — reproducible axiom hygiene check (audit F11).
+
+Runs `#print axioms` on every public theorem in the seven libraries.  A clean run
+prints only `{propext, Classical.choice, Quot.sound}` for each (or "does not depend
+on any axioms"); any `sorryAx` / `Lean.ofReduceBool` / `native_decide` would show up
+here.  Driven by `scripts/check.sh`, which builds the project and greps this file's
+output for anything unexpected.
+
+Not a `lean_lib` / default target — run with `lake env lean AxiomAudit.lean` after
+`lake build`.
+-/
+
+import ForMathlib
+import LipschitzMargin
+import SelfAttention
+import IntervalBounds
+import ExactMILP
+import AlgebraicBoundary
+import Verifier
+
+open VeriStressGT
+
+-- ForMathlib (5)
+#print axioms ForMathlib.ibp_affine_sound
+#print axioms ForMathlib.ibp_relu_sound
+#print axioms ForMathlib.lipschitz_affine_of_opNorm
+#print axioms ForMathlib.lipschitzWith_listComp
+#print axioms ForMathlib.softmax_jacobian_opNorm_le_half
+
+-- ForMathlib.SoftmaxLipschitz — F2-B (softmax LipschitzWith ½, 6)
+#print axioms ForMathlib.softmax_nonneg
+#print axioms ForMathlib.softmax_sum_one
+#print axioms ForMathlib.softmaxJac_opNorm_le_half
+#print axioms ForMathlib.softmaxJac_mulVec
+#print axioms ForMathlib.hasFDerivAt_softmax
+#print axioms ForMathlib.lipschitzWith_softmax
+
+-- LipschitzMargin.Basic (3)
+#print axioms LipschitzMargin.robust_of_margin_gt
+#print axioms LipschitzMargin.argmax_stable_of_margin_gt
+#print axioms LipschitzMargin.robust_of_deviation_lt_margin
+
+-- LipschitzMargin.DeepContractiveCNN — T1' + specializations (8)
+#print axioms LipschitzMargin.AffLayer.map_lipschitz
+#print axioms LipschitzMargin.netLipschitz
+#print axioms LipschitzMargin.netProd_eq
+#print axioms LipschitzMargin.dccnn_margin_lipschitz
+#print axioms LipschitzMargin.dccnn_robust_via_net
+#print axioms LipschitzMargin.dccnn_robust_via_net_upper
+#print axioms LipschitzMargin.dccnn_robust_of_true_L
+#print axioms LipschitzMargin.dccnn_robust_of_upper_bound
+
+-- SelfAttention (5)
+#print axioms SelfAttention.linearDominance_token_bound
+#print axioms SelfAttention.linearDominance_robust
+#print axioms SelfAttention.gap_iff_stability_margin
+#print axioms SelfAttention.gap_implies_stability_margin
+#print axioms SelfAttention.fixedPattern_robust
+
+-- SelfAttention.LinearDominanceBlock — T2 linear derivation (audit F2, 4)
+#print axioms SelfAttention.token_deviation
+#print axioms SelfAttention.zflat_deviation
+#print axioms SelfAttention.margin_deviation
+#print axioms SelfAttention.linearDominance_robust_derived
+
+-- SelfAttention.FixedPatternBlock — T2 fixed-pattern C.1/C.2/C.3 (audit F2-C + AUDIT2 G1, 7)
+#print axioms SelfAttention.inner_deviation_bound
+#print axioms SelfAttention.score_deviation_unit
+#print axioms SelfAttention.pooling_leading_coeff
+#print axioms SelfAttention.FixedPatternAttn.attn_dist_le
+#print axioms SelfAttention.FixedPatternAttn.attn_l1
+#print axioms SelfAttention.FixedPatternAttn.Z_deviation
+#print axioms SelfAttention.FixedPatternAttn.Z_deviation_n2
+
+-- IntervalBounds (4)
+#print axioms IntervalBounds.Layer.sound
+#print axioms IntervalBounds.ibp_network_sound
+#print axioms IntervalBounds.robust_of_ibp_lower_pos
+#print axioms IntervalBounds.netTrace_mem_netBoxes
+
+-- ExactMILP (3)
+#print axioms ExactMILP.bigM_relu_faithful
+#print axioms ExactMILP.bigM_relu_complete
+#print axioms ExactMILP.label_sound_of_optimal
+
+-- ExactMILP.Network — T3/F4b whole-network big-M + advSet wiring (8)
+#print axioms ExactMILP.robust_of_lt_infDist_advSet
+#print axioms ExactMILP.label_sound_net_of_optimal
+#print axioms ExactMILP.infDist_inter_closedBall_of_exists_mem_ball
+#print axioms ExactMILP.robust_of_no_adv_in_ball
+#print axioms ExactMILP.bigMReach_sound
+#print axioms ExactMILP.bigMReach_complete
+#print axioms ExactMILP.bigM_feasible_iff_netEval
+#print axioms ExactMILP.bigM_adversary_iff
+
+-- AlgebraicBoundary (2)
+#print axioms AlgebraicBoundary.robust_of_lt_dist_boundary
+#print axioms AlgebraicBoundary.robust_of_numerical_lower_bound
+
+-- Verifier (1)
+#print axioms Verifier.sound_unsat_robust

@@ -1,0 +1,53 @@
+name = "aiq_veristressgt_formalization"
+version = "0.1.0"
+keywords = ["math", "formalization", "robustness", "verification", "lipschitz", "neural-network"]
+defaultTargets = ["ForMathlib", "LipschitzMargin", "SelfAttention", "IntervalBounds", "ExactMILP", "AlgebraicBoundary", "Verifier"]
+
+# Standalone Lean workspace for the UCLA / VeriStressGT robustness-certificate
+# thread. Mirrors the structure of aiq-dkps-formalization: one top-level Lean
+# library per certificate family (published theorem cluster), plus a shared
+# ForMathlib staging library. All theorems are PROVED (zero `sorry`; `lake build`
+# green). Live status is in formalization.yaml. See README.md and ../theorem-map.md.
+
+[leanOptions]
+pp.unicode.fun = true
+# Avoid accidental free variables in theorem statements.
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+# Mathlib-staging library: results with potential to land in Mathlib, restated
+# in Mathlib idiom, one file per proposed destination path. See ForMathlib/README.md.
+[[lean_lib]]
+name = "ForMathlib"
+
+# T1 + T1′ — Lipschitz-margin certificate + spectral-norm composition.
+# Grounds cnn.deep_contractive_cnn and the margin half of the attention certs.
+[[lean_lib]]
+name = "LipschitzMargin"
+
+# T2 — self-attention sensitivity. attention.linear_dominance (softmax-free,
+# easiest) and attention.fixed_pattern (softmax-Jacobian bound).
+[[lean_lib]]
+name = "SelfAttention"
+
+# T4 — interval bound propagation soundness. Feeds the Difficulty Profile and
+# discharges the (l,u) validity hypothesis of the exact-MILP oracle.
+[[lean_lib]]
+name = "IntervalBounds"
+
+# T3 — big-M ReLU MILP encoding faithfulness + label soundness given OPTIMAL.
+[[lean_lib]]
+name = "ExactMILP"
+
+# T6 — distance-to-the-algebraic-boundary robustness (metric core; ED-degree
+# machinery is cited context, out of Mathlib scope).
+[[lean_lib]]
+name = "AlgebraicBoundary"
+
+# T5 — verifier soundness/completeness specification (the α-β-CROWN interface
+# the card stands on). Makes the Family-B card edges explicit hypotheses.
+[[lean_lib]]
+name = "Verifier"

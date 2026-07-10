@@ -1,0 +1,2 @@
+# Source PDFs are pulled down for reference but NOT committed.
+*.pdf
