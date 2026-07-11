@@ -35,32 +35,43 @@ VeriStressGT lives in Fact 2's regime *deliberately*: it works on a **bounded
 picks `X₀` near-orthogonal so the softmax is far from the flat/degenerate regime
 where the bound is loosest.
 
-## 2. The `L_attn` bound as instantiated (`fixed_pattern.py`)
+## 2. The `L_attn` bound — paper (`n/2`) vs code (`n/4`)
 
 For scaled attention `softmax(α X Xᵀ)(X W_V)` on the `ε`-box around `X₀`, with
-`V₀ = X₀ W_V`, `compute_L_attn` (lines 56–71) uses
+`V₀ = X₀ W_V`, the **paper** (arXiv:2605.17153 Appendix A.6, eq. 52–54) states
 
 ```
-B_S    = α·(2√d + ε·d)                         # bound on the score perturbation ‖ΔS‖
-L_attn = (n/4)·B_S·‖V₀‖_{2,∞}                   # softmax-Jacobian × value magnitude term
-         + √d·σ(W_V)                            # value-path sensitivity
-         + (n/4)·B_S·ε·√d·σ(W_V)                # cross second-order term
+B̄_S(ε) = α·(2√d + ε·d)                          # bound on the score perturbation ‖ΔS‖
+L_attn  = (n/2)·B̄_S·‖V₀‖_{2,∞}                   # softmax-Jacobian × value magnitude term
+        + √d·σ(W_V)                              # value-path sensitivity
+        + (n/2)·B̄_S·ε·√d·σ(W_V)                  # cross second-order term
 ```
+
+derived from `‖∇softmax(z)‖_op ≤ ½` (spectral) via the per-row drift
+`‖ã_i − a_i⁰‖₁ ≤ (n/2)·ε·B̄_S` (eq. 52). **The shipped code `compute_L_attn`
+(fixed_pattern.py:56–71) instead uses `n/4` on the first and third terms** — a
+confirmed code-vs-paper discrepancy (2× too small, unsafe direction). See
+[`../FINDING-attn-Lattn-n4.md`](../FINDING-attn-Lattn-n4.md); the honest `n/2` is
+machine-checked as `FixedPatternAttn.Z_deviation_n2`.
 
 **Argument chain (product / chain rule).** Attention output row `Z_i =
 Σ_j a_{ij} v_j`. Perturbing `X → X+Δ` (‖Δ‖∞ ≤ ε) moves two things:
 1. **the weights `a`**, through the score `S = αXXᵀ`. `ΔS` is bounded by
-   `B_S = α(2√d + εd)` (linear `2√d` term + quadratic `εd` self-term), and the
-   softmax Jacobian contributes the `‖diag(a)−aaᵀ‖ ≤ ½` factor, aggregated over
-   `n` tokens as the `n/4` coefficient (½ per token, halved again by the
-   symmetric attention structure);
+   `B̄_S = α(2√d + εd)` (linear `2√d` term + quadratic `εd` self-term). The
+   **spectral** softmax-Jacobian bound `‖diag(a)−aaᵀ‖_op ≤ ½` gives
+   `‖Δa_i‖₂ ≤ ½·‖ΔS_i‖₂ ≤ ½·√n·B̄_S·ε`, then `‖Δa_i‖₁ ≤ √n·‖Δa_i‖₂ = (n/2)·B̄_S·ε`
+   (ℓ¹←ℓ² Cauchy–Schwarz). The coefficient is **`n/2`**, not `n/4`; substituting
+   the *entrywise* Jacobian bound `maxₐ a(1−a) = ¼` for the spectral `½` is the
+   only route to `n/4`, and it is wrong here (the ℓ² row-aggregation needs the
+   spectral norm).
 2. **the values `v = XW_V`**, with sensitivity `√d·σ(W_V)` (`L∞→L₂` gives `√d`,
-   `σ(W_V)` is the projection's spectral norm).
+   `σ(W_V)` is the projection's spectral norm); coefficient-free in `n` because
+   `‖a_i⁰‖₁ = 1`.
 The product rule on `a·v` gives the three terms: `Δa · v₀` (term 1), `a·Δv`
 (term 2), and `Δa·Δv` (the cross term). Then the head `W_head` (spectrally
 normalised so `L_h = ‖W_head‖₂ = 1`) multiplies through, giving the full logit
 sensitivity `L_h · √n · L_attn` (the `√n` folds the `n` token rows into the flat
-logit vector).
+logit vector, matching the paper's eq. 55 `‖Attn(X)−Attn(X₀)‖_F ≤ √n·L_attn·ε`).
 
 **The certificate.** With that constant, the margin condition (`check_certificate`,
 line 111) is the *same* Lipschitz-margin corollary as the CNN:
@@ -93,10 +104,14 @@ validity rests on the pattern never flipping in the box.
   Every use of `L_attn` implicitly relies on `X` staying in the box — which the
   VNN-LIB spec does enforce, so this is sound, but the constant is *region-specific*
   and recomputed per instance.
-- **SA-2 (softmax-Jacobian `½`/`n/4` constant).** The `n/4` aggregation of the
-  `‖diag(a)−aaᵀ‖ ≤ ½` bound is the crux; if the pooled bound is loose the
-  certificate is conservative (safe), if it is *wrong* (too small) the ground
-  truth is invalid. Worth transcribing the exact per-token accounting into Lean.
+- **SA-2 (softmax-Jacobian `½`/`n/4` constant) — RESOLVED, confirmed bug.** The
+  aggregation of `‖diag(a)−aaᵀ‖_op ≤ ½` over the `n` rows gives coefficient **`n/2`**
+  — this is the paper's own eq. 52/54 (arXiv:2605.17153 §A.6) and is now machine-checked
+  (`FixedPatternAttn.Z_deviation_n2`). The shipped `compute_L_attn` uses **`n/4`**
+  (the *entrywise* Jacobian max `maxₐ a(1−a)=¼` mis-substituted for the spectral norm),
+  i.e. **2× too small — the unsafe direction**, so a shipped instance with `margin_slack<2`
+  can be a false-UNSAT ground-truth label. Edge `attn-Lattn-n4-pooling`; details in
+  [`../FINDING-attn-Lattn-n4.md`](../FINDING-attn-Lattn-n4.md).
 - **SA-3 (gap condition ⟹ fixed pattern).** The certificate assumes the softmax
   argmax pattern is constant on the box. `gap_ok` is a *sufficient* condition for
   that; the code checks `gap_ok_actual` (line 92) numerically at `X₀`. Edge: the

@@ -73,16 +73,18 @@ status:
   repository_build:
     note: >
       VERIFIED GREEN, ZERO SORRY (last run 2026-07-10 via scripts/check.sh): `lake build`
-      clean, no sorry/admit, all 56 public theorems axiom-clean {propext, Classical.choice,
+      clean, no sorry/admit, all 61 public theorems axiom-clean {propext, Classical.choice,
       Quot.sound}. Both outside-audit gaps are closed in Lean: F4b (whole-network big-M wired
       to IBP box validity, ExactMILP/Network.lean) and F2 for BOTH attention constructions —
       linear (SelfAttention/LinearDominanceBlock.lean, DERIVED certificate) and softmax
-      fixed-pattern (SelfAttention/FixedPatternBlock.lean assembles the output-deviation bound
-      Z_deviation/Z_deviation_n2, consuming ForMathlib.lipschitzWith_softmax — the tight
-      ½-Lipschitz softmax result whose Fréchet derivative hasFDerivAt_softmax is proved on
-      EuclideanSpace). The flagship softmax_jacobian_opNorm_le_half (spectral bound, Rayleigh +
-      Popoviciu) is the R1 seed. Remaining items are NON-LEAN: UCLA n/4 adjudication (now
-      Lean-anchored by Z_deviation_n2) and outside faithfulness review. F5 (git) deferred by request.
+      fixed-pattern (SelfAttention/FixedPatternBlock.lean: Z_deviation/Z_deviation_n2 output
+      bound AND the full cert fixedPattern_robust_derived, consuming ForMathlib.lipschitzWith_softmax).
+      The n/4 finding is RESOLVED from primary sources to a CONFIRMED code-vs-paper bug (paper
+      eq.54 uses n/2, code uses n/4; FINDING-attn-Lattn-n4.md). Flagship packaging (G8): the
+      Loewner statements softmaxJac_posSemidef / two_smul_softmaxJac_le_one are added (the C*-norm
+      route is ℂ-only — Matrix n n ℝ is not a CStarAlgebra, verified — so the ½ norm stays Rayleigh).
+      Remaining items are NON-LEAN: REPORT the n/4 bug to UCLA + outside faithfulness review. Git
+      resolved (standalone repo aiq-veristressgt-formalization).
     toolchain: "leanprover/lean4:v4.31.0-rc2 (pinned to match aiq-dkps-formalization)"
     build_commands:
       - "bash setup_lean.sh"
@@ -94,11 +96,11 @@ status:
     theorem(s) fully proved (zero `sorry`), carrying the load-bearing edges as explicit
     hypotheses (e.g. LipschitzMargin.dccnn_robust_of_upper_bound takes the
     upper-bound premise the power-iteration `L̂` does not satisfy).
-  # All 56 public theorems are proved (sorry_count 0) and axiom-clean
+  # All 61 public theorems are proved (sorry_count 0) and axiom-clean
   # ({propext, Classical.choice, Quot.sound}) — verified by AxiomAudit.lean /
-  # scripts/check.sh (30 first pass + 16 F2/F4b closure + 6 SoftmaxLipschitz + 4 FixedPatternBlock G1).
-  # F2 (both attention constructions, incl. softmax LipschitzWith ½ and the assembled
-  # fixed-pattern output bound) and F4b are fully closed.
+  # scripts/check.sh (56 through AUDIT2 + 2 Loewner corollaries (G8) + 3 fixed-pattern cert (step 1e)).
+  # F2 (both attention constructions, incl. softmax LipschitzWith ½, the assembled fixed-pattern
+  # output bound, and the full cert fixedPattern_robust_derived) and F4b are fully closed.
   # `tier` follows AUDIT.md §3 (substantive / edge-specialization / spec-rewrite).
   # Representative targets:
   main_targets:
@@ -197,7 +199,7 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 56 public theorems) + scripts/check.sh"
+    method: "AxiomAudit.lean (#print axioms on all 61 public theorems) + scripts/check.sh"
     last_run: "2026-07-10"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
@@ -205,14 +207,14 @@ status:
     status: "self-assessed + two outside passes (AUDIT.md, AUDIT2.md) + closure passes"
     outside_audit: "AUDIT.md (2026-07-07, F1–F11) + AUDIT2.md (2026-07-09, G1–G9). AUDIT2 verdict: mathematics real, correct, mechanically verified; one Lean gap (G1: fixed-pattern chain unassembled) + doc/hygiene debt. G1 CLOSED 2026-07-10 (FixedPatternBlock.Z_deviation/Z_deviation_n2 assemble the output bound, consuming lipschitzWith_softmax); G2 thereby Lean-evidenced (edge anchor moved to Z_deviation_n2); G3–G7,G9 reconciled. F5 (git) deferred by request."
     open_gaps:
-      - "UCLA adjudication (NON-LEAN): take the assembled Z_deviation_n2 bound (leading coeff n/2) to UCLA re: compute_L_attn's n/4 — find the halving argument (edge closes as tightness) or confirm the soundness gap (edge attn-Lattn-n4-pooling). Now backed by a machine-checked derivation, not prose."
+      - "UCLA report (NON-LEAN, finding RESOLVED from sources 2026-07-10): compute_L_attn uses n/4 but paper eq.54 uses n/2 (= machine-checked Z_deviation_n2 AND fixedPattern_robust_derived); confirmed code-vs-paper bug, 2× unsafe. See FINDING-attn-Lattn-n4.md. Action item is to REPORT to UCLA (not adjudicate)."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
-      - "G8 (upstream shape, optional): restate softmax_jacobian_opNorm_le_half in Loewner form (0 ≤ J ∧ 2•J ≤ 1) for the Mathlib PR — survey §7.1."
-      - "G6 (hygiene, optional): de-duplicate softmaxJac/softmaxJac_mulVec vs private sjJ/sjJ_mulVec."
+      - "Challenge/ packaging (optional, DKPS parity): the softmax pair (softmax_jacobian_opNorm_le_half + Loewner forms + lipschitzWith_softmax) as the opening Mathlib PR candidate."
     closed_this_pass:
-      - "G1: fixed-pattern output-deviation bound ASSEMBLED (Z_deviation, Z_deviation_n2) — the softmax construction now certifies from construction-level quantities, not an assumed Lipschitz constant."
-      - "G2: attn-Lattn-n4-pooling edge now anchored to the derived bound Z_deviation_n2 (leading coeff n/2), not the standalone identity."
-      - "G3–G5,G7,G9: status reconciliation (file headers, yaml note/scope, ExactMILP NOTE), netTrace docstring (G4), pooling tier (G5), netMap fold-orientation (G7), stable-neuron footnote (G9)."
+      - "G1: fixed-pattern chain ASSEMBLED (Z_deviation/Z_deviation_n2) AND the full cert fixedPattern_robust_derived (step 1e, aggregate zflat + head + margin) — softmax construction fully certified from construction-level quantities, no assumed Lipschitz constant."
+      - "G2 RESOLVED FROM SOURCES: read the VeriStressGT paper (eq.54 = n/2, from spectral ½) and Kim et al. (no n/4); the code's n/4 is a confirmed code-vs-paper bug (entrywise ¼ mis-substituted for spectral ½). Edge upgraded to kind: code-vs-paper-bug. FINDING-attn-Lattn-n4.md."
+      - "G6 de-duplicated softmaxJac/sjJ (public in SoftmaxJacobianBound); G3–G5,G7,G9 reconciled."
+      - "G8: the C*-order↔norm route is ℂ-only (Matrix n n ℝ not a CStarAlgebra, verified in Lean) — kept the Rayleigh norm proof and ADDED the Mathlib-preferred Loewner statements softmaxJac_posSemidef (0≤J) + two_smul_softmaxJac_le_one (2•J≤1) via posSemidef_iff_dotProduct_mulVec (works over ℝ), reusing the variance lemmas."
     external_lean_survey: "EXTERNAL-LEAN-SURVEY.md (2026-07-09): no drop-in Lean source for R1/R2/R3; girving/interval is the reuse candidate ONLY for the float32-export edge (R9); TorchLean (nktkt/leanx) is a statement/differential-oracle reference (Lean 4.28, sorry'd float layer), not a dependency."
 
 # Edges to the empirical repo. Full tables + severities in ucla-formalization-edges.md.
@@ -300,22 +302,25 @@ edges:
   - id: attn-Lattn-n4-pooling
     card: ta1/VeriStressGT/cards/evaluation.yaml
     construction: attention.fixed_pattern
+    status: "CONFIRMED code-vs-paper discrepancy (2026-07-10) — see FINDING-attn-Lattn-n4.md"
     assumption:
-      theorem: "T2 aggregated L_attn — the DERIVED output bound has leading coefficient n/2"
+      theorem: "T2 aggregated L_attn = n/2 — paper arXiv:2605.17153 eq.52/54 AND the machine-checked bound"
       lean: VeriStressGT.SelfAttention.FixedPatternAttn.Z_deviation_n2   # ‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV)+δV
       prose: prose/self-attention-lipschitz.md   # SA-2
+      finding: FINDING-attn-Lattn-n4.md
     relaxation:
       code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/attention/fixed_pattern.py
       line: 66
       informal: >
-        compute_L_attn uses n/4 on the first and third terms of ‖ΔZ‖; the assembled Lean bound
-        Z_deviation_n2 (row-ℓ² √n via sq_sum_le_card_mul_sum_sq × softmax-½ via lipschitzWith_softmax
-        × ℓ¹→ℓ² √n) has leading coefficient n/2 — now a machine-checked derivation, not prose. If
-        no halving argument exists in arXiv:2006.04710, the certified L_attn is ~2× too small on
-        those terms — the UNSAFE direction (a false-UNSAT instance could ship, cushioned by
-        margin_slack). Suspicious numerology: ¼ = maxₐ a(1−a) is the ENTRYWISE softmax-Jacobian
-        bound (the spectral-vs-entrywise trap). Raise with UCLA alongside the Appendix-A power-iteration item.
-    kind: numeric-estimate
+        RESOLVED FROM PRIMARY SOURCES: the paper (arXiv:2605.17153 §A.6 eq.52/54) uses n/2, derived
+        from the spectral ‖∇softmax‖_op ≤ 1/2, matching the machine-checked Z_deviation_n2. The
+        shipped compute_L_attn uses n/4 on the ‖V0‖ and cross terms — the ENTRYWISE Jacobian bound
+        maxₐ a(1−a)=1/4 mis-substituted for the spectral norm the ℓ² row-aggregation requires. So the
+        code under-certifies L_attn by 2× vs its own paper — UNSAFE direction (smaller L_attn → easier
+        cert → possible false-UNSAT ground-truth label when margin_slack < 2). Kim et al. (2006.04710,
+        the cited source) provide NO n/4 and NO symmetric-halving; their bound is a different, tighter
+        O(√N log N) result. Ask UCLA: is n/4 intentional (and if so what justifies the entrywise sub)?
+    kind: code-vs-paper-bug
     severity: high
   - id: card-timeout-incomplete
     card: ta1/VeriStressGT/cards/evaluation.yaml

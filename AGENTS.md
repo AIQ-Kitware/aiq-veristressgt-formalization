@@ -233,7 +233,7 @@ declaration corresponds to.
   uses `l ≤ s ≤ u`); (b) `linearDominance_robust` / `fixedPattern_robust` docstrings claimed
   to "compose `token_bound`" but actually **assume** the block `LipschitzWith` constant — now
   documented honestly as the margin step *modulo* the Lipschitz-constant derivation.
-- **ZERO `sorry`: all 56 public theorems proved & axiom-clean,** verified by
+- **ZERO `sorry`: all 61 public theorems proved & axiom-clean,** verified by
   `scripts/check.sh` / `AxiomAudit.lean` (both audit gaps F2 and F4b fully closed for BOTH
   attention constructions, incl. the unconditional softmax `LipschitzWith ½` and the assembled
   fixed-pattern output bound — below). Flagship
@@ -297,8 +297,30 @@ declaration corresponds to.
   the hard results (R1/R2/R3) — they are our contribution. `girving/interval` is the reuse candidate
   ONLY for a future `float32-export` edge; TorchLean (`nktkt/leanx`) is a statement/differential-oracle
   reference (Lean 4.28, `sorry`'d float layer), not a build dependency.
-- **Next (suggested order):** (1) UCLA adjudication of the `n/4` pooling finding (edge
-  `attn-Lattn-n4-pooling`); (2) external review of *statement faithfulness* to the PDFs
-  (AUDIT.md §5 step 7); (3) DKPS-parity `Challenge/` packaging of the softmax candidate + its
-  now-proved Lipschitz consumer `lipschitzWith_softmax` (AUDIT.md §6). F2-B/F4b are done; F5 (git)
-  deferred by request.
+- **RESEARCH + G8 PASS (2026-07-10, standalone repo aiq-veristressgt-formalization).**
+  - **n/4 finding RESOLVED from primary sources → confirmed code-vs-paper bug.** Read the actual
+    VeriStressGT paper (arXiv:2605.17153 §A.6): eq. 52/54 use **n/2**, derived from the spectral
+    `‖∇softmax‖_op ≤ 1/2` — matching our machine-checked `Z_deviation_n2`. The shipped
+    `compute_L_attn` (fixed_pattern.py) uses **n/4** (the *entrywise* Jacobian max `maxₐ a(1−a)=¼`
+    mis-substituted for the spectral norm). Kim et al. (2006.04710, the cited source) give NO n/4
+    and NO symmetric-halving (their bound is a different, tighter `O(√N log N)` result). So the code
+    under-certifies `L_attn` 2× vs its own paper — UNSAFE. Full write-up: `FINDING-attn-Lattn-n4.md`;
+    edge `attn-Lattn-n4-pooling` upgraded to `kind: code-vs-paper-bug`. Action shifts from "adjudicate"
+    to "report to UCLA".
+  - **G8 answered: the C\*-norm route is ℂ-only.** Tested in Lean: `CStarAlgebra (Matrix n n ℝ)`
+    fails to synthesize (Mathlib C\*-algebras are complex), so the ~60-line Rayleigh-plumbing deletion
+    is NOT available over ℝ — the norm bound stays the Rayleigh proof. What DOES reuse Mathlib and is
+    worth having (the PR-facing shape): the **Loewner pair `softmaxJac_posSemidef` (0 ≤ J) +
+    `two_smul_softmaxJac_le_one` (2•J ≤ 1)** in `SoftmaxJacobianBound.lean`, both via
+    `posSemidef_iff_dotProduct_mulVec` (works over ℝ) reusing the variance lemmas `sj_var_nonneg`/`sj_var_le`.
+    Gotchas: `IsSelfAdjoint.all (2:ℝ)` for the smul-Hermitian; `star x = x` via `star_trivial`;
+    `Matrix.le_iff` + scoped `MatrixOrder`.
+- **External Lean survey (`EXTERNAL-LEAN-SURVEY.md`, 2026-07-09):** no drop-in Lean source exists for
+  the hard results (R1/R2/R3) — they are our contribution. `girving/interval` is the reuse candidate
+  ONLY for a future `float32-export` edge; TorchLean (`nktkt/leanx`) is a statement/differential-oracle
+  reference (Lean 4.28, `sorry`'d float layer), not a build dependency.
+- **Next (suggested order):** (1) REPORT the n/4 code-vs-paper bug to UCLA (`FINDING-attn-Lattn-n4.md`);
+  (2) external review of *statement faithfulness* to the PDFs (AUDIT.md §5 step 7); (3) optional
+  completeness: `fixedPattern_robust_derived` (aggregate `Z_deviation` over tokens + head, mirroring
+  `LinearDominanceBlock`); (4) DKPS-parity `Challenge/` packaging of the softmax candidate (now with the
+  Loewner forms). F2/F4b done; git now resolved (standalone repo).

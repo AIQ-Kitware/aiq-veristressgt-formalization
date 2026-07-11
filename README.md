@@ -12,7 +12,7 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > published-theorem chain, the working conventions, and the known traps. This README is
 > just the build + library map.
 
-> **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** All **56 public
+> **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** All **61 public
 > theorems** are proved; an independent `#print axioms` sweep ([`AxiomAudit.lean`](AxiomAudit.lean)
 > / [`scripts/check.sh`](scripts/check.sh)) shows only `{propext, Classical.choice, Quot.sound}`.
 > Both audit gaps (F2, F4b) are **fully closed** in Lean — for **both** attention constructions
@@ -38,8 +38,21 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > - **F2 fixed-pattern chain ASSEMBLED** (AUDIT2 G1) — [`FixedPatternBlock.lean`](SelfAttention/FixedPatternBlock.lean)
 >   `Z_deviation`/`Z_deviation_n2` derive `‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV) + δV`, consuming
 >   `lipschitzWith_softmax` and Mathlib's Chebyshev pooling lemma. Its **leading coefficient `n/2`
->   is now a machine-checked derivation** — the real Lean anchor for edge `attn-Lattn-n4-pooling`
->   (the honest `n/2` the code's `n/4` under-estimates 2×).
+>   is now a machine-checked derivation** — the real Lean anchor for edge `attn-Lattn-n4-pooling`.
+>
+> **Headline finding — a confirmed soundness bug ([`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md)).**
+> Reading the primary sources settled the `n/4` question: the VeriStressGT **paper**
+> (arXiv:2605.17153 §A.6 eq. 54) uses **`n/2`** (from the spectral `‖∇softmax‖_op ≤ ½`), matching
+> our machine-checked `Z_deviation_n2`; the shipped **code** `compute_L_attn` uses **`n/4`** (the
+> *entrywise* Jacobian max `¼` mis-substituted for the spectral norm). The code under-certifies
+> `L_attn` by 2× vs its own paper — the **unsafe** direction (risk of false-UNSAT ground-truth
+> labels). This is exactly the class of defect the edges program exists to catch, now backed by a
+> machine-checked bound rather than prose.
+>
+> *(Flagship packaging note, AUDIT2 G8: the Mathlib-preferred **Loewner** statements
+> `softmaxJac_posSemidef` (`0 ≤ J`) and `two_smul_softmaxJac_le_one` (`2•J ≤ 1`) are added; the
+> `½` operator-norm form stays the Rayleigh proof because Mathlib's C\*-algebra order↔norm bridge is
+> ℂ-only — `Matrix n n ℝ` is not a `CStarAlgebra`, verified.)*
 
 ## What VeriStressGT claims
 

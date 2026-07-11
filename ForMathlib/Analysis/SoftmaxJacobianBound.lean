@@ -19,7 +19,7 @@ Cross-ref: prose/self-attention-lipschitz.md §1 (Fact 2), edge SA-2.
 import Mathlib
 
 set_option autoImplicit false
-open scoped BigOperators Matrix Matrix.Norms.L2Operator
+open scoped BigOperators Matrix Matrix.Norms.L2Operator MatrixOrder
 open Matrix RCLike WithLp
 
 namespace VeriStressGT.ForMathlib
@@ -160,5 +160,41 @@ theorem softmax_jacobian_opNorm_le_half
       abs_of_nonneg (sj_var_nonneg a (ofLp x) hnonneg hsum),
       abs_of_nonneg (le_of_lt hsumsq), div_le_iff₀ hsumsq]
     linarith [sj_var_le a (ofLp x) hnonneg hsum]
+
+/-! ### Loewner-order form (Mathlib-PR-facing statements, audit AUDIT2.md G8)
+
+The pair `0 ≤ J ∧ 2•J ≤ 1` (Loewner order) is the standard, upstream-preferred way to state
+the spectral fact; the `½` operator-norm bound above is a generic C\*-corollary of it — but
+*only over ℂ*: `Matrix n n ℝ` is **not** a `CStarAlgebra` in Mathlib (verified: the
+`CStarAlgebra`-order↔norm bridge fails to synthesize over `ℝ`), so we keep the Rayleigh
+route for the norm and add these Loewner statements as the reusable primary facts.  Both go
+straight to the already-proved variance lemmas via `posSemidef_iff_dotProduct_mulVec`. -/
+
+/-- **`0 ≤ J`** (Loewner).  The softmax Jacobian is positive semidefinite — the variance
+`⟪x, Jx⟫ = Var_a(x) ≥ 0` (`sj_var_nonneg`). -/
+theorem softmaxJac_posSemidef (a : Fin n → ℝ) (hnonneg : ∀ i, 0 ≤ a i) (hsum : ∑ i, a i = 1) :
+    (softmaxJac a).PosSemidef := by
+  refine Matrix.posSemidef_iff_dotProduct_mulVec.mpr ⟨softmaxJac_isHermitian a, fun x => ?_⟩
+  have hstar : star x = x := by funext i; exact star_trivial (x i)
+  rw [hstar, softmaxJac_quad]
+  exact sj_var_nonneg a x hnonneg hsum
+
+/-- **`2•J ≤ 1`** (Loewner), i.e. every eigenvalue of `J` is `≤ ½` — the Popoviciu variance
+bound `Var_a(x) ≤ ½‖x‖²` (`sj_var_le`).  With `softmaxJac_posSemidef` this is the pair
+`0 ≤ J ∧ 2•J ≤ 1`; over a complex C\*-algebra `‖J‖ ≤ ½` would follow generically, but here
+it is the Rayleigh theorem above. -/
+theorem two_smul_softmaxJac_le_one (a : Fin n → ℝ) (hnonneg : ∀ i, 0 ≤ a i)
+    (hsum : ∑ i, a i = 1) :
+    (2 : ℝ) • softmaxJac a ≤ (1 : Matrix (Fin n) (Fin n) ℝ) := by
+  rw [Matrix.le_iff]
+  refine Matrix.posSemidef_iff_dotProduct_mulVec.mpr
+    ⟨Matrix.isHermitian_one.sub ((softmaxJac_isHermitian a).smul (IsSelfAdjoint.all 2)),
+      fun x => ?_⟩
+  have hstar : star x = x := by funext i; exact star_trivial (x i)
+  rw [hstar, sub_mulVec, one_mulVec, smul_mulVec, dotProduct_sub, dotProduct_smul,
+    softmaxJac_quad, smul_eq_mul,
+    show x ⬝ᵥ x = ∑ i, (x i) ^ 2 from by
+      rw [dotProduct]; apply Finset.sum_congr rfl; intro i _; rw [sq]]
+  linarith [sj_var_le a x hnonneg hsum]
 
 end VeriStressGT.ForMathlib

@@ -38,7 +38,7 @@ import ForMathlib.Analysis.SoftmaxLipschitz
 
 set_option autoImplicit false
 open scoped BigOperators
-open VeriStressGT.ForMathlib WithLp
+open VeriStressGT.ForMathlib VeriStressGT.LipschitzMargin WithLp
 
 namespace VeriStressGT.SelfAttention
 
@@ -273,5 +273,132 @@ theorem FixedPatternAttn.Z_deviation_n2 [NeZero n] (A : FixedPatternAttn n d dv)
     have hs : Real.sqrt n * Real.sqrt n = (n : ℝ) := Real.mul_self_sqrt (by positivity)
     linear_combination (BS * ε / 2) * hs
   rwa [hcoef] at h
+
+/-! ### Full fixed-pattern robustness certificate (AUDIT2 §5 step 1e) -/
+
+/-- A single coordinate of a Euclidean vector is bounded by its norm. -/
+private theorem abs_apply_le_norm {ι : Type*} [Fintype ι]
+    (v : EuclideanSpace ℝ ι) (j : ι) : |v j| ≤ ‖v‖ := by
+  have h : ‖v j‖ ≤ ‖v‖ := by
+    rw [EuclideanSpace.norm_eq,
+      show ‖v j‖ = Real.sqrt (‖v j‖ ^ 2) from (Real.sqrt_sq (norm_nonneg _)).symm]
+    apply Real.sqrt_le_sqrt
+    exact Finset.single_le_sum (f := fun i => ‖v i‖ ^ 2)
+      (fun i _ => sq_nonneg _) (Finset.mem_univ j)
+  rwa [Real.norm_eq_abs] at h
+
+/-- The flattened fixed-pattern output over all tokens (ℓ²-aggregated). -/
+noncomputable def FixedPatternAttn.zflat (A : FixedPatternAttn n d dv)
+    (X : Fin n → Fin d → ℝ) : EuclideanSpace ℝ (Fin n × Fin dv) :=
+  toLp 2 (fun p : Fin n × Fin dv => ofLp (A.Z X p.1) p.2)
+
+/-- ℓ²-pooling of the per-token output deviations: `‖Δzflat‖ ≤ √n · K`. -/
+theorem FixedPatternAttn.zflat_deviation [NeZero n] (A : FixedPatternAttn n d dv)
+    (X X₀ : Fin n → Fin d → ℝ) (K : ℝ) (hK0 : 0 ≤ K)
+    (hK : ∀ i, ‖A.Z X i - A.Z X₀ i‖ ≤ K) :
+    ‖A.zflat X - A.zflat X₀‖ ≤ Real.sqrt n * K := by
+  rw [← dist_eq_norm, EuclideanSpace.dist_eq,
+    show Real.sqrt n * K = Real.sqrt ((n : ℝ) * K ^ 2) from by
+      rw [Real.sqrt_mul (by positivity), Real.sqrt_sq hK0]]
+  apply Real.sqrt_le_sqrt
+  have key : ∑ p : Fin n × Fin dv, dist (A.zflat X p) (A.zflat X₀ p) ^ 2
+      = ∑ i, ‖A.Z X i - A.Z X₀ i‖ ^ 2 := by
+    rw [Fintype.sum_prod_type]
+    apply Finset.sum_congr rfl; intro i _
+    rw [← dist_eq_norm, EuclideanSpace.dist_eq, Real.sq_sqrt (by positivity)]
+    apply Finset.sum_congr rfl; intro j _; rfl
+  rw [key]
+  calc ∑ i, ‖A.Z X i - A.Z X₀ i‖ ^ 2
+      ≤ ∑ _i : Fin n, K ^ 2 := by
+        apply Finset.sum_le_sum; intro i _
+        nlinarith [hK i, norm_nonneg (A.Z X i - A.Z X₀ i)]
+    _ = (n : ℝ) * K ^ 2 := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+
+/-- Per-competitor margin of a linear head `W_head · zflat + b_head` (class `y` vs `k`). -/
+noncomputable def FixedPatternAttn.margin (A : FixedPatternAttn n d dv) {c : ℕ}
+    (Whead : EuclideanSpace ℝ (Fin n × Fin dv) →L[ℝ] EuclideanSpace ℝ (Fin c))
+    (bhead : EuclideanSpace ℝ (Fin c)) (y k : Fin c) (X : Fin n → Fin d → ℝ) : ℝ :=
+  (Whead (A.zflat X) + bhead) y - (Whead (A.zflat X) + bhead) k
+
+/-- The per-token output-deviation budget `K = √m·(½ρ)·(Vmax+δV) + δV` (from `Z_deviation`,
+`m` = number of tokens). -/
+private noncomputable def fpK (m : ℕ) (ρ δV Vmax : ℝ) : ℝ :=
+  Real.sqrt m * ((1 / 2) * ρ) * (Vmax + δV) + δV
+
+/--
+**Fixed-pattern margin deviation.**  The head bias cancels; the two competitor coordinates
+each move by `≤ ‖W_head‖·‖Δzflat‖ ≤ ‖W_head‖·√n·K`, with `K` the per-token output budget
+(`Z_deviation`, consuming `lipschitzWith_softmax`).  The outer `√n` is the token pooling
+(matching the paper's eq. 55 `√n·L_attn·ε`). -/
+theorem FixedPatternAttn.margin_deviation [NeZero n] (A : FixedPatternAttn n d dv) {c : ℕ}
+    (Whead : EuclideanSpace ℝ (Fin n × Fin dv) →L[ℝ] EuclideanSpace ℝ (Fin c))
+    (bhead : EuclideanSpace ℝ (Fin c)) (y k : Fin c)
+    (X₀ : Fin n → Fin d → ℝ) (ε ρ δV Vmax : ℝ) (hρ0 : 0 ≤ ρ) (hδV0 : 0 ≤ δV)
+    (hVmax0 : 0 ≤ Vmax)
+    (hρ : ∀ X, dist X X₀ ≤ ε → ∀ i, ‖A.score X i - A.score X₀ i‖ ≤ ρ)
+    (hδV : ∀ X, dist X X₀ ≤ ε → ∀ j, ‖A.V X j - A.V X₀ j‖ ≤ δV)
+    (hVmax : ∀ j, ‖A.V X₀ j‖ ≤ Vmax) :
+    ∀ X, dist X X₀ ≤ ε →
+      |A.margin Whead bhead y k X - A.margin Whead bhead y k X₀|
+        ≤ 2 * ‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax) := by
+  intro X hX
+  have hK0 : 0 ≤ fpK n ρ δV Vmax := by
+    have : 0 ≤ Real.sqrt n * ((1 / 2) * ρ) * (Vmax + δV) :=
+      mul_nonneg (mul_nonneg (Real.sqrt_nonneg _) (by linarith)) (by linarith)
+    simp only [fpK]; linarith
+  have hKtok : ∀ i, ‖A.Z X i - A.Z X₀ i‖ ≤ fpK n ρ δV Vmax := fun i =>
+    A.Z_deviation X X₀ i ρ δV Vmax hδV0 (hρ X hX i) (hδV X hX) hVmax
+  set Δz := A.zflat X - A.zflat X₀ with hΔz
+  have hmapY : Whead (A.zflat X) y - Whead (A.zflat X₀) y = Whead Δz y := by
+    rw [hΔz, map_sub]; rfl
+  have hmapK : Whead (A.zflat X) k - Whead (A.zflat X₀) k = Whead Δz k := by
+    rw [hΔz, map_sub]; rfl
+  have happ : ∀ (u : EuclideanSpace ℝ (Fin c)) (j : Fin c), (u + bhead) j = u j + bhead j :=
+    fun _ _ => rfl
+  have hdiff : A.margin Whead bhead y k X - A.margin Whead bhead y k X₀
+      = Whead Δz y - Whead Δz k := by
+    simp only [FixedPatternAttn.margin, happ]
+    rw [← hmapY, ← hmapK]; ring
+  rw [hdiff]
+  have hz : ‖Δz‖ ≤ Real.sqrt n * fpK n ρ δV Vmax :=
+    A.zflat_deviation X X₀ (fpK n ρ δV Vmax) hK0 hKtok
+  have hop : ‖Whead Δz‖ ≤ ‖Whead‖ * ‖Δz‖ := Whead.le_opNorm Δz
+  have htri : |Whead Δz y - Whead Δz k| ≤ |Whead Δz y| + |Whead Δz k| := by
+    simpa only [Real.norm_eq_abs] using norm_sub_le (Whead Δz y) (Whead Δz k)
+  have hznn : (0 : ℝ) ≤ Real.sqrt n * fpK n ρ δV Vmax := mul_nonneg (Real.sqrt_nonneg _) hK0
+  calc |Whead Δz y - Whead Δz k|
+      ≤ |Whead Δz y| + |Whead Δz k| := htri
+    _ ≤ ‖Whead Δz‖ + ‖Whead Δz‖ := add_le_add (abs_apply_le_norm _ _) (abs_apply_le_norm _ _)
+    _ = 2 * ‖Whead Δz‖ := by ring
+    _ ≤ 2 * (‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax)) := by
+        have hstep : ‖Whead‖ * ‖Δz‖ ≤ ‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax) :=
+          mul_le_mul_of_nonneg_left hz (norm_nonneg _)
+        linarith [hop, hstep]
+    _ = 2 * ‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax) := by ring
+
+/--
+**Fixed-pattern robustness certificate — DERIVED (AUDIT2 G1, full cert).**
+From the score/value deviations (`hρ`/`hδV` = the code's `B_S·ε`/`√d·σ_V·ε` seams) and the
+nominal value bound, if the nominal margin exceeds `2·‖W_head‖·√n·K` for every competitor,
+then `y` wins throughout the ε-box.  NO Lipschitz constant is assumed — the softmax
+contraction is derived via `lipschitzWith_softmax`.  This is the fixed-pattern analogue of
+`linearDominance_robust_derived`; `K = fpK` carries the honest `n/2` pooling (`Z_deviation_n2`). -/
+theorem fixedPattern_robust_derived [NeZero n] (A : FixedPatternAttn n d dv) {c : ℕ}
+    (Whead : EuclideanSpace ℝ (Fin n × Fin dv) →L[ℝ] EuclideanSpace ℝ (Fin c))
+    (bhead : EuclideanSpace ℝ (Fin c)) (y : Fin c)
+    (X₀ : Fin n → Fin d → ℝ) (ε ρ δV Vmax : ℝ) (hρ0 : 0 ≤ ρ) (hδV0 : 0 ≤ δV)
+    (hVmax0 : 0 ≤ Vmax)
+    (hρ : ∀ X, dist X X₀ ≤ ε → ∀ i, ‖A.score X i - A.score X₀ i‖ ≤ ρ)
+    (hδV : ∀ X, dist X X₀ ≤ ε → ∀ j, ‖A.V X j - A.V X₀ j‖ ≤ δV)
+    (hVmax : ∀ j, ‖A.V X₀ j‖ ≤ Vmax)
+    (hmargin : ∀ k, k ≠ y →
+      2 * ‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax) < A.margin Whead bhead y k X₀) :
+    ∀ X, dist X X₀ ≤ ε → ∀ k, k ≠ y → 0 < A.margin Whead bhead y k X := by
+  intro X hX k hk
+  refine robust_of_deviation_lt_margin (A.margin Whead bhead y k) X₀ ε
+    (2 * ‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax)) ?_ (hmargin k hk) X hX
+  intro X' hX'
+  exact A.margin_deviation Whead bhead y k X₀ ε ρ δV Vmax hρ0 hδV0 hVmax0 hρ hδV hVmax X' hX'
 
 end VeriStressGT.SelfAttention

@@ -27,6 +27,8 @@ open VeriStressGT
 #print axioms ForMathlib.lipschitz_affine_of_opNorm
 #print axioms ForMathlib.lipschitzWith_listComp
 #print axioms ForMathlib.softmax_jacobian_opNorm_le_half
+#print axioms ForMathlib.softmaxJac_posSemidef
+#print axioms ForMathlib.two_smul_softmaxJac_le_one
 
 -- ForMathlib.SoftmaxLipschitz — F2-B (softmax LipschitzWith ½, 6)
 #print axioms ForMathlib.softmax_nonneg
@@ -72,6 +74,9 @@ open VeriStressGT
 #print axioms SelfAttention.FixedPatternAttn.attn_l1
 #print axioms SelfAttention.FixedPatternAttn.Z_deviation
 #print axioms SelfAttention.FixedPatternAttn.Z_deviation_n2
+#print axioms SelfAttention.FixedPatternAttn.zflat_deviation
+#print axioms SelfAttention.FixedPatternAttn.margin_deviation
+#print axioms SelfAttention.fixedPattern_robust_derived
 
 -- IntervalBounds (4)
 #print axioms IntervalBounds.Layer.sound
