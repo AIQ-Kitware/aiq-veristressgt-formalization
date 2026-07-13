@@ -20,7 +20,7 @@ Status tracked in [`../formalization.yaml`](../formalization.yaml); all **proved
 | Declaration | File | What it claims |
 |---|---|---|
 | `AffLayer` / `AffLayer.map` / `.map_lipschitz` | `DeepContractiveCNN.lean` | one affine + `1`-Lipschitz-activation layer is `‖W‖₊`-Lipschitz |
-| `netMap` / `netLipschitz` | `DeepContractiveCNN.lean` | the network is `LipschitzWith (∏ᵢ ‖Wᵢ‖₊)` — via `ForMathlib.lipschitzWith_listComp` |
+| `netMap` / `netLipschitz` | `DeepContractiveCNN.lean` | the network is `LipschitzWith (∏ᵢ ‖Wᵢ‖₊)` — via Mathlib's `LipschitzWith.list_prod` |
 | `netProd_eq` | `DeepContractiveCNN.lean` | `∏ᵢ ‖Wᵢ‖₊ = σ_proj · λ^D · w_out` under the DCCNN normalization |
 | `dccnn_margin_lipschitz` | `DeepContractiveCNN.lean` | margin read-out `φ∘net` is `‖φ‖₊·∏‖Wᵢ‖₊`-Lipschitz |
 | `dccnn_robust_via_net` / `_upper` | `DeepContractiveCNN.lean` | robustness with `L` **discharged** by the product; `_upper` attaches the edge `L ≤ L̂` to the genuine `‖φ‖₊·∏‖Wᵢ‖₊` |

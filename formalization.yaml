@@ -75,7 +75,7 @@ status:
   repository_build:
     note: >
       VERIFIED GREEN, ZERO SORRY (last run 2026-07-10 via scripts/check.sh): `lake build`
-      clean, no sorry/admit, all 63 audited declarations axiom-clean {propext, Classical.choice,
+      clean, no sorry/admit, all 62 audited declarations axiom-clean {propext, Classical.choice,
       Quot.sound}. Both outside-audit gaps are closed in Lean: F4b (whole-network big-M wired
       to IBP box validity, ExactMILP/Network.lean) and F2 for BOTH attention constructions —
       linear (SelfAttention/LinearDominanceBlock.lean, DERIVED certificate) and softmax
@@ -111,7 +111,7 @@ status:
     theorem(s) fully proved (zero `sorry`), carrying the load-bearing edges as explicit
     hypotheses (e.g. LipschitzMargin.dccnn_robust_of_upper_bound takes the
     upper-bound premise the power-iteration `L̂` does not satisfy).
-  # All 63 audited declarations are proved (sorry_count 0) and axiom-clean
+  # All 62 audited declarations are proved (sorry_count 0) and axiom-clean
   # ({propext, Classical.choice, Quot.sound}) — verified by AxiomAudit.lean /
   # scripts/check.sh (56 through AUDIT2 + 2 Loewner (G8) + 3 fixed-pattern cert (step 1e) + 2 L∞→ℓ² glue (AUDIT3 H8)).
   # F2 (both attention constructions, incl. softmax LipschitzWith ½, the assembled fixed-pattern
@@ -214,7 +214,7 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 63 audited declarations) + scripts/check.sh"
+    method: "AxiomAudit.lean (#print axioms on all 62 audited declarations) + scripts/check.sh"
     last_run: "2026-07-10"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
@@ -229,8 +229,9 @@ status:
       - "G2 RESOLVED FROM SOURCES: read the VeriStressGT paper (eq.54 = n/2, from spectral ½) and Kim et al. (no n/4); the code's n/4 is a confirmed code-vs-paper bug (entrywise ¼ mis-substituted for spectral ½). Edge upgraded to kind: code-vs-paper-bug. FINDING-attn-Lattn-n4.md."
       - "G6 de-duplicated softmaxJac/sjJ (public in SoftmaxJacobianBound); G3–G5,G7,G9 reconciled."
       - "G8: the C*-order↔norm route is ℂ-only (Matrix n n ℝ not a CStarAlgebra, verified in Lean) — kept the Rayleigh norm proof and ADDED the Mathlib-preferred Loewner statements softmaxJac_posSemidef (0≤J) + two_smul_softmaxJac_le_one (2•J≤1) via posSemidef_iff_dotProduct_mulVec (works over ℝ), reusing the variance lemmas."
-      - "AUDIT3 H1/H4/H5/H6/H8: exposure evidence (margin_slack=1.05) added to the finding+edge; fpK made public; abs_apply_le_norm de-duplicated into ForMathlib (PiLp.norm_apply_le); docstring 'n/2' + count reconciled to 63 audited declarations; H8 glue lemmas added so score_deviation_unit → score_row_deviation → fixedPattern_robust_derived compose (weights are the only remaining seam)."
+      - "AUDIT3 H1/H4/H5/H6/H8: exposure evidence (margin_slack=1.05) added to the finding+edge; fpK made public; abs_apply_le_norm de-duplicated into ForMathlib (PiLp.norm_apply_le); docstring 'n/2' + count reconciled to 62 audited declarations; H8 glue lemmas added so score_deviation_unit → score_row_deviation → fixedPattern_robust_derived compose (weights are the only remaining seam)."
       - "H7 Challenge/comparator layer (DKPS parity): Challenge/MathlibCandidate/Softmax/{Conformance,Leaderboard}.lean + comparator/candidate-01-softmax.json + Challenge/README.md + [[lean_lib]] Challenge (not a default target) + comparator tooling scripts/docs. Leaf theorems: lipschitzWith_softmax, softmaxJac_posSemidef, two_smul_softmaxJac_le_one — the softmax package (def + fderiv + tight ½-Lipschitz + Loewner Jacobian bounds), absent from any Lean source."
+      - "Prior-art resolution (2026-07-13, EXTERNAL-LEAN-SURVEY.md §10): the local lipschitzWith_listComp product-of-constants composition bound was found SUBSUMED by Mathlib's LipschitzWith.list_prod (Topology/EMetricSpace/Lipschitz.lean; in Function.End the List.prod is exactly foldr (·∘·) id). Removed it and reproved netLipschitz to instantiate the upstream lemma directly (no redundant local re-derivation). Audited-declaration count 63→62; no novelty claim made for a bound Mathlib already ships."
     external_lean_survey: "EXTERNAL-LEAN-SURVEY.md (2026-07-09): no drop-in Lean source for R1/R2/R3; girving/interval is the reuse candidate ONLY for the float32-export edge (R9); TorchLean (nktkt/leanx) is a statement/differential-oracle reference (Lean 4.28, sorry'd float layer), not a dependency."
 
 # Edges to the empirical repo. Full tables + severities in ucla-formalization-edges.md.

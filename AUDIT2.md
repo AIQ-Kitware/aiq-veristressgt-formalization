@@ -82,8 +82,10 @@ hypothesis — that derivative fact is the one remaining piece") — directly co
 the theorems below it (G3); and `softmaxJac`/`softmaxJac_mulVec` **verbatim-duplicate** the
 `private` `sjJ`/`sjJ_mulVec` (G6).
 
-**`ForMathlib/Analysis/OperatorNormLipschitz.lean`** — `lipschitzWith_listComp` is
-correct, minimal, and genuinely reusable; the first audit's F1-comment defect is fixed.
+**`ForMathlib/Analysis/OperatorNormLipschitz.lean`** — `lipschitzWith_listComp` was
+correct and minimal, but the 2026-07-13 prior-art audit (EXTERNAL-LEAN-SURVEY.md §10) found it
+subsumed by Mathlib's `LipschitzWith.list_prod`; it has since been **removed** and `netLipschitz`
+reproved via the upstream lemma. The first audit's F1-comment defect is fixed.
 `ForMathlib/Analysis/IntervalArithmeticSound.lean` — unchanged, re-verified sound.
 
 **`LipschitzMargin/Basic.lean`** — `robust_of_deviation_lt_margin` added (the F3 fix);
@@ -286,8 +288,9 @@ Ordered. Step 1 is the only proof work; 2–4 are hours; 5–7 are packaging/pro
    way (Conformance + Leaderboard + comparator config): the softmax pair
    (`softmax_jacobian_opNorm_le_half` in Loewner form + `lipschitzWith_softmax` +
    `hasFDerivAt_softmax`) as the single opening PR — it is self-contained, absent from
-   Mathlib (survey-verified), and tight. `lipschitzWith_listComp` is a plausible second,
-   pending a Mathlib dup-check. Half a day after step 4.
+   Mathlib (survey-verified), and tight. (`lipschitzWith_listComp` was the plausible second
+   candidate; the 2026-07-13 dup-check found it already in Mathlib as `LipschitzWith.list_prod`,
+   so it was dropped, not PR'd — see EXTERNAL-LEAN-SURVEY.md §10.) Half a day after step 4.
 
 6. **Version control (deferred F5 — cannot stay deferred for "publishable").** Everything
    above is still untracked on disk. `git init` + submodule wiring per `AGENTS.md` §8 is a

@@ -21,11 +21,10 @@ import Verifier
 
 open VeriStressGT
 
--- ForMathlib (5)
+-- ForMathlib (4)
 #print axioms ForMathlib.ibp_affine_sound
 #print axioms ForMathlib.ibp_relu_sound
 #print axioms ForMathlib.lipschitz_affine_of_opNorm
-#print axioms ForMathlib.lipschitzWith_listComp
 #print axioms ForMathlib.softmax_jacobian_opNorm_le_half
 #print axioms ForMathlib.softmaxJac_posSemidef
 #print axioms ForMathlib.two_smul_softmaxJac_le_one

@@ -3,15 +3,14 @@ Operator norm of a continuous linear map as its Lipschitz constant, and the
 `L = ∏ ‖Wᵢ‖₂` composition bound behind the VeriStressGT CNN certificate (T1′).
 
 Status: the single-affine-layer bound `lipschitz_affine_of_opNorm` follows from
-`ContinuousLinearMap.lipschitz` + translation invariance.  `lipschitzWith_listComp`
-— the product-of-constants bound for a *list* of composed Lipschitz self-maps — is
-**not a Mathlib candidate**: the 2026-07-13 prior-art audit (EXTERNAL-LEAN-SURVEY.md
-§10) found it subsumed by Mathlib's `LipschitzWith.list_prod`
-(`Mathlib/Topology/EMetricSpace/Lipschitz.lean`; in `Function.End α`, `List.prod` is
-exactly `foldr (· ∘ ·) id`).  It is kept only as a local `Forall₂`-shaped convenience
-wrapper for the `LipschitzMargin` net construction, which uses it to prove
-`LipschitzWith (∏ᵢ ‖Wᵢ‖₊) net` (see `LipschitzMargin/DeepContractiveCNN.lean`,
-`netLipschitz`).
+`ContinuousLinearMap.lipschitz` + translation invariance.  The product-of-constants
+bound for a *list* of composed Lipschitz self-maps is **already in Mathlib** as
+`LipschitzWith.list_prod` (`Mathlib/Topology/EMetricSpace/Lipschitz.lean`; in
+`Function.End α`, `List.prod` is exactly `foldr (· ∘ ·) id`).  The 2026-07-13
+prior-art audit (EXTERNAL-LEAN-SURVEY.md §10) flagged the earlier local
+`lipschitzWith_listComp` wrapper as redundant with it; that lemma has been **removed**
+and `LipschitzMargin/DeepContractiveCNN.lean` (`netLipschitz`) now instantiates the
+upstream `LipschitzWith.list_prod` directly to prove `LipschitzWith (∏ᵢ ‖Wᵢ‖₊) net`.
 
 Cross-ref: prose/lipschitz-margin-certificate.md §2; edge `dccnn-L-power-iter`
 (the empirical `L̂` from power iteration is a *lower* bound on the true `∏‖Wᵢ‖₂`,
@@ -49,21 +48,8 @@ theorem lipschitz_affine_of_opNorm
       = edist (W x) (W y) := by simp [edist_dist, dist_add_right]
     _ ≤ ‖W‖₊ * edist x y := W.lipschitz x y
 
-/-- **Product-of-constants composition bound.**  A composition of Lipschitz
-self-maps `f₀ ∘ f₁ ∘ … ∘ fₖ₋₁` (as `List.foldr (· ∘ ·) id fs`) is Lipschitz with
-constant `∏ Kᵢ`, where `fᵢ` is `Kᵢ`-Lipschitz (paired via `List.Forall₂`).
-
-**Subsumed by Mathlib's `LipschitzWith.list_prod`** (audit 2026-07-13,
-EXTERNAL-LEAN-SURVEY.md §10): in `Function.End α` the list product is exactly this
-foldr-composition, so this is the same theorem with `Forall₂` packaging instead of
-an indexed family.  Kept as a local convenience wrapper (3 lines from
-`LipschitzWith.comp`); cite `LipschitzWith.list_prod` upstream, do not PR this. -/
-theorem lipschitzWith_listComp {E : Type*} [PseudoEMetricSpace E]
-    {fs : List (E → E)} {Ks : List ℝ≥0}
-    (h : List.Forall₂ (fun f K => LipschitzWith K f) fs Ks) :
-    LipschitzWith Ks.prod (fs.foldr (· ∘ ·) id) := by
-  induction h with
-  | nil => simpa using LipschitzWith.id
-  | cons hf _ ih => simpa [List.prod_cons] using hf.comp ih
+-- Product-of-constants composition bound: use Mathlib's `LipschitzWith.list_prod`.
+-- (The former local `lipschitzWith_listComp` was removed in the 2026-07-13 prior-art
+-- pass as redundant with it; see the header and `LipschitzMargin/DeepContractiveCNN.lean`.)
 
 end VeriStressGT.ForMathlib

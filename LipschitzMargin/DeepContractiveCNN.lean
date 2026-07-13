@@ -66,14 +66,25 @@ below hold regardless; only the *reading* of the list order differs. -/
 def netMap (Ls : List (AffLayer E)) : E → E := (Ls.map AffLayer.map).foldr (· ∘ ·) id
 
 /-- **`netLipschitz` (T1′).**  The network is Lipschitz with the *product of the
-layers' operator norms* `∏ᵢ ‖Wᵢ‖₊` — via `ForMathlib.lipschitzWith_listComp`. -/
+layers' operator norms* `∏ᵢ ‖Wᵢ‖₊`.  A direct instance of Mathlib's
+`LipschitzWith.list_prod` (audit 2026-07-13: the prior-art check found this is the
+established upstream lemma — in `Function.End E` the `List.prod` is exactly the
+`foldr (· ∘ ·) id` composition of `netMap`, and every layer is `‖W‖₊`-Lipschitz). -/
 theorem netLipschitz (Ls : List (AffLayer E)) :
     LipschitzWith ((Ls.map (fun L => ‖L.W‖₊)).prod) (netMap Ls) := by
-  unfold netMap
-  apply lipschitzWith_listComp
+  have h := LipschitzWith.list_prod (fun L : AffLayer E => (AffLayer.map L : Function.End E))
+    (fun L => ‖L.W‖₊) (fun L => L.map_lipschitz) Ls
+  -- `h` gives `LipschitzWith (∏ ‖Wᵢ‖₊) ((Ls.map fₑ).prod)` with `fₑ L : Function.End E`;
+  -- `convert` fixes the `Function.End E` typing, then the residual goal is `netMap Ls = prod`,
+  -- proved by induction (`netMap`'s `foldr (· ∘ ·) id` = the `Function.End` `List.prod`).
+  convert h using 2
+  clear h
   induction Ls with
-  | nil => exact List.Forall₂.nil
-  | cons L Ls ih => exact List.Forall₂.cons L.map_lipschitz ih
+  | nil => rfl
+  | cons L Ls ih =>
+    have hstep : netMap (L :: Ls) = AffLayer.map L ∘ netMap Ls := rfl
+    rw [hstep, ih, List.map_cons, List.prod_cons]
+    rfl
 
 /-- The product of the layer norms equals `σ_proj · λ^D · w_out` when the norms are
 exactly `[σ_proj, λ, …(D times)…, λ, w_out]` — the DCCNN normalization.  This is the

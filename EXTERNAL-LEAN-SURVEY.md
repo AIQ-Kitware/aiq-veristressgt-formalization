@@ -328,7 +328,7 @@ Per-item verdicts:
 | `HasFDerivAt softmax (toEuclideanCLM (diag a − aaᵀ))` | **Not found.** Loogle: 0 declarations mentioning `HasFDerivAt` with `Matrix.toEuclideanCLM`, and 0 with `Matrix.diagonal`. |
 | `LipschitzWith ½ softmax` (L²) | **Not found.** Loogle: 0 for `LipschitzWith` + `EuclideanSpace` + `Real.exp`. Nearest is the generic MVT bridge `lipschitzWith_of_nnnorm_fderiv_le` (Analysis/Calculus/MeanValue.lean). |
 | `‖diag a − aaᵀ‖₂ ≤ ½`; Loewner `0 ≤ J`, `2•J ≤ 1` | **Not found.** Loogle: 0 for `Matrix.PosSemidef (Matrix.diagonal _ - _)` and for `Matrix.diagonal _ - Matrix.vecMulVec _ _`; master grep for any diagonal/vecMulVec combination: 0. Changes since the pin in `Analysis/Matrix/Order.lean` / `LinearAlgebra/Matrix/PosDef.lean` are unrelated (quadratic-form bridges, Schur product, Kronecker), and the Loewner file (generic over `RCLike`, so it does cover ℝ) still has **no norm↔order bridge** usable over ℝ (consistent with §7.1's caveat). Nearest ingredients: `Matrix.posSemidef_vecMulVec_self_star` (PosDef.lean:411 — `aaᵀ ⪰ 0`, wrong direction), `Matrix.l2_opNorm_diagonal` (CStarAlgebra/Matrix.lean:232), Popoviciu (Probability/Moments/Variance.lean:496, measure-theoretic), `Finset.sum_mul_sq_le_sq_mul_sq` (Cauchy–Schwarz for finsets). |
-| `lipschitzWith_listComp` | **SUBSUMED — drop the novelty claim.** Mathlib (already at the pin) has `LipschitzWith.list_prod : LipschitzWith (l.map K).prod (l.map f).prod` for `f : ι → Function.End α` (Topology/EMetricSpace/Lipschitz.lean; Loogle for `LipschitzWith (List.prod _) _` returns exactly this one hit). In `Function.End`, `List.prod` *is* `foldr (· ∘ ·) id`, so this is the same theorem with indexed-family packaging instead of `Forall₂`. Our `Forall₂` form stays as a local 3-line convenience wrapper; it is **not** a Mathlib candidate. Cite `LipschitzWith.list_prod` (+ `LipschitzWith.comp`; equal-constants case: `LipschitzWith.iterate`/`pow_end`). |
+| `lipschitzWith_listComp` | **SUBSUMED — drop the novelty claim.** Mathlib (already at the pin) has `LipschitzWith.list_prod : LipschitzWith (l.map K).prod (l.map f).prod` for `f : ι → Function.End α` (Topology/EMetricSpace/Lipschitz.lean; Loogle for `LipschitzWith (List.prod _) _` returns exactly this one hit). In `Function.End`, `List.prod` *is* `foldr (· ∘ ·) id`, so this is the same theorem with indexed-family packaging instead of `Forall₂`. **RESOLVED:** the local `lipschitzWith_listComp` was removed and `netLipschitz` now instantiates `LipschitzWith.list_prod` directly (+ `LipschitzWith.comp`; equal-constants case: `LipschitzWith.iterate`/`pow_end`). |
 
 **SciLean caveat for the definition claim (updates §2.C):** SciLean *does* define softmax —
 `SciLean.ML.softMax` (`SciLean/Modules/ML/SoftMax.lean`): a temperature-scaled, max-shifted
@@ -349,6 +349,8 @@ logged-in Zulip search for "softmax" remains the one cheap residual check. As be
 absence claims are "not found," not "proven absent" — but the four softmax items have now
 survived two independent passes with disjoint tooling.
 
-**Actions taken with this audit:** `lipschitzWith_listComp`'s docstring and this file's
-framing were corrected (subsumption recorded); `Conformance.lean`'s header now cites this
-section and the SciLean nuance. R1/R2 verdicts in §4 stand.
+**Actions taken with this audit:** the subsumed `lipschitzWith_listComp` was **removed
+outright** and `LipschitzMargin/DeepContractiveCNN.lean` `netLipschitz` reproved to
+instantiate Mathlib's `LipschitzWith.list_prod` directly (no redundant local re-derivation
+retained); the audited-declaration count dropped 63→62; `Conformance.lean`'s header now cites
+this section and the SciLean nuance. R1/R2 verdicts in §4 stand.

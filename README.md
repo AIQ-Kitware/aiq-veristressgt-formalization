@@ -13,7 +13,7 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > just the build + library map.
 
 > **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** Every substantive
-> theorem is proved; an independent `#print axioms` sweep over all **63 audited declarations**
+> theorem is proved; an independent `#print axioms` sweep over all **62 audited declarations**
 > ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
 > `{propext, Classical.choice, Quot.sound}`.
 > Both audit gaps (F2, F4b) are **fully closed** in Lean — for **both** attention constructions

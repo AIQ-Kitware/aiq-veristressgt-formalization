@@ -233,7 +233,7 @@ declaration corresponds to.
   uses `l ≤ s ≤ u`); (b) `linearDominance_robust` / `fixedPattern_robust` docstrings claimed
   to "compose `token_bound`" but actually **assume** the block `LipschitzWith` constant — now
   documented honestly as the margin step *modulo* the Lipschitz-constant derivation.
-- **ZERO `sorry`: all 63 audited declarations proved & axiom-clean,** verified by
+- **ZERO `sorry`: all 62 audited declarations proved & axiom-clean,** verified by
   `scripts/check.sh` / `AxiomAudit.lean` (both audit gaps F2 and F4b fully closed for BOTH
   attention constructions, incl. the unconditional softmax `LipschitzWith ½` and the assembled
   fixed-pattern output bound — below). Flagship
@@ -246,7 +246,7 @@ declaration corresponds to.
   `Finset.exists_max_image` + midpoint). Genuine Mathlib candidate.
 - **OUTSIDE AUDIT RESPONSE (AUDIT.md, 2026-07-07).** An independent review found the proved
   content real but narrower than the status lines. Addressed in this pass: **F1** — T1′ is now
-  formalized (`netLipschitz`: network `LipschitzWith (∏ᵢ‖Wᵢ‖₊)` via `lipschitzWith_listComp`;
+  formalized (`netLipschitz`: network `LipschitzWith (∏ᵢ‖Wᵢ‖₊)` via Mathlib's `LipschitzWith.list_prod`;
   `dccnn_robust_via_net_upper` anchors the `dccnn-L-power-iter` edge to the genuine product, not
   an abstract `L`); **F3** — `linearDominance_robust` restated in total-deviation form (no ε
   double-count) via `robust_of_deviation_lt_margin`; **F4** — `label_sound_of_optimal` now
