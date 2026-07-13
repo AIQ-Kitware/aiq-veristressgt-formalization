@@ -306,3 +306,49 @@ tree (`.lake/packages/mathlib`, rev per `lake-manifest.json`) — `Matrix.instCS
 `sq_sum_le_card_mul_sum_sq` (Algebra/Order/Chebyshev.lean). §8 repos assessed from prior
 knowledge of the Lean ecosystem (CvxLean, optlib, madvorak/duality, lean-smt,
 lean-matrix-cookbook); none carries consumable robustness/attention results.
+
+---
+
+## 10. Independent prior-art audit of the Mathlib-candidate claims (2026-07-13)
+
+An independent pass (second auditor, tool-driven, not relying on this document's earlier
+searches) re-checked the novelty claims behind
+`Challenge/MathlibCandidate/Softmax/Conformance.lean` and `lipschitzWith_listComp`,
+this time against **Mathlib master as of 2026-07-13** (rev `4a7edd35ec`, fetched into the
+local checkout — i.e. everything landed *since* the v4.31.0-rc2 pin `476fb97b` of
+2026-06-11 is covered), plus Loogle (name and statement-shape queries against live
+master), LeanSearch (semantic), the mathlib4 GitHub issue/PR search (covers PRs in
+flight), and community-library source (SciLean tree).
+
+Per-item verdicts:
+
+| Item | Verdict |
+|---|---|
+| `softmax` definition (any type, any name) | **Not found in Mathlib** (name grep 0; Loogle `Real.exp _ / ∑ _, Real.exp _` 0; no logsumexp/Boltzmann/Gibbs-map; `stdSimplex` has no exp-map into it; mathlib4 PR/issue search for "softmax": 0 total). **SciLean caveat below.** |
+| `HasFDerivAt softmax (toEuclideanCLM (diag a − aaᵀ))` | **Not found.** Loogle: 0 declarations mentioning `HasFDerivAt` with `Matrix.toEuclideanCLM`, and 0 with `Matrix.diagonal`. |
+| `LipschitzWith ½ softmax` (L²) | **Not found.** Loogle: 0 for `LipschitzWith` + `EuclideanSpace` + `Real.exp`. Nearest is the generic MVT bridge `lipschitzWith_of_nnnorm_fderiv_le` (Analysis/Calculus/MeanValue.lean). |
+| `‖diag a − aaᵀ‖₂ ≤ ½`; Loewner `0 ≤ J`, `2•J ≤ 1` | **Not found.** Loogle: 0 for `Matrix.PosSemidef (Matrix.diagonal _ - _)` and for `Matrix.diagonal _ - Matrix.vecMulVec _ _`; master grep for any diagonal/vecMulVec combination: 0. Changes since the pin in `Analysis/Matrix/Order.lean` / `LinearAlgebra/Matrix/PosDef.lean` are unrelated (quadratic-form bridges, Schur product, Kronecker), and the Loewner file (generic over `RCLike`, so it does cover ℝ) still has **no norm↔order bridge** usable over ℝ (consistent with §7.1's caveat). Nearest ingredients: `Matrix.posSemidef_vecMulVec_self_star` (PosDef.lean:411 — `aaᵀ ⪰ 0`, wrong direction), `Matrix.l2_opNorm_diagonal` (CStarAlgebra/Matrix.lean:232), Popoviciu (Probability/Moments/Variance.lean:496, measure-theoretic), `Finset.sum_mul_sq_le_sq_mul_sq` (Cauchy–Schwarz for finsets). |
+| `lipschitzWith_listComp` | **SUBSUMED — drop the novelty claim.** Mathlib (already at the pin) has `LipschitzWith.list_prod : LipschitzWith (l.map K).prod (l.map f).prod` for `f : ι → Function.End α` (Topology/EMetricSpace/Lipschitz.lean; Loogle for `LipschitzWith (List.prod _) _` returns exactly this one hit). In `Function.End`, `List.prod` *is* `foldr (· ∘ ·) id`, so this is the same theorem with indexed-family packaging instead of `Forall₂`. Our `Forall₂` form stays as a local 3-line convenience wrapper; it is **not** a Mathlib candidate. Cite `LipschitzWith.list_prod` (+ `LipschitzWith.comp`; equal-constants case: `LipschitzWith.iterate`/`pow_end`). |
+
+**SciLean caveat for the definition claim (updates §2.C):** SciLean *does* define softmax —
+`SciLean.ML.softMax` (`SciLean/Modules/ML/SoftMax.lean`): a temperature-scaled, max-shifted
+*computational* softmax on `R^ι` (`DataArrayN`), not on `EuclideanSpace ℝ`. Its dedicated
+derivative-rules file (`SciLean/AD/Rules/DataArrayN/Softmax.lean`, incl. a `HasFDerivAt`
+synthesis) is **entirely commented out** and rests on `sorry_proof`. So the honest claim is:
+"no softmax in Mathlib, and no *verified* softmax anywhere in Lean 4; SciLean carries an
+unverified computational one" — cite SciLean as related work, not prior art.
+
+Coverage caveats of this pass: **Moogle is dead** (API returns internal server errors;
+LeanSearch is the maintained successor and was used instead — its nearest hits for all
+softmax queries were generic: `stdSimplex.map`, `lipschitzWith_of_nnnorm_deriv_le`, PosDef
+basics). **Zulip could not be searched exhaustively**: the spectator API rejects search
+narrows without login, and neither the indexed archive nor web search over
+`leanprover.zulipchat.com` surfaced softmax discussion; given zero hits in code, Loogle,
+LeanSearch, and the PR/issue tracker, a Zulip-only prior claim is unlikely, but a
+logged-in Zulip search for "softmax" remains the one cheap residual check. As before:
+absence claims are "not found," not "proven absent" — but the four softmax items have now
+survived two independent passes with disjoint tooling.
+
+**Actions taken with this audit:** `lipschitzWith_listComp`'s docstring and this file's
+framing were corrected (subsumption recorded); `Conformance.lean`'s header now cites this
+section and the SciLean nuance. R1/R2 verdicts in §4 stand.

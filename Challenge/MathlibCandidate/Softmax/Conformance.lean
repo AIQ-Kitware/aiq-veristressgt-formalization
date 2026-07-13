@@ -7,10 +7,15 @@
 whole proof tree (here: the softmax Fréchet derivative `hasFDerivAt_softmax`, the spectral
 Jacobian bound `softmax_jacobian_opNorm_le_half`, and the variance lemmas).
 
-These results are **absent from Mathlib** (there is no `softmax` on `EuclideanSpace`, nor
-its derivative, Lipschitz constant, or Jacobian positivity — verified in
-`EXTERNAL-LEAN-SURVEY.md`). The definitions below are exactly the ones a Mathlib PR would
-add; the statements are stated in pure Mathlib vocabulary.
+These results are **absent from Mathlib** (there is no `softmax` at all — any type, any
+name — nor its derivative, Lipschitz constant, or Jacobian norm/Loewner bounds).  Verified
+twice with disjoint tooling: `EXTERNAL-LEAN-SURVEY.md` (2026-07-09) and the independent
+prior-art audit of 2026-07-13 (survey §10: Mathlib master rev `4a7edd35ec` grep, Loogle
+statement-shape queries, LeanSearch, mathlib4 PR/issue search — all 0).  Related work, not
+prior art: SciLean's `SciLean.ML.softMax` is a computational, temperature-scaled softmax
+on `R^ι` whose derivative rules are commented out / `sorry_proof`-backed — no verified
+softmax exists anywhere in Lean 4.  The definitions below are exactly the ones a Mathlib
+PR would add; the statements are stated in pure Mathlib vocabulary.
 -/
 import Mathlib
 
