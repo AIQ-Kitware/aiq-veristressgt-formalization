@@ -50,10 +50,13 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > labels). This is exactly the class of defect the edges program exists to catch, now backed by a
 > machine-checked bound rather than prose.
 >
-> *(Flagship packaging note, AUDIT2 G8: the Mathlib-preferred **Loewner** statements
-> `softmaxJac_posSemidef` (`0 ≤ J`) and `two_smul_softmaxJac_le_one` (`2•J ≤ 1`) are added; the
-> `½` operator-norm form stays the Rayleigh proof because Mathlib's C\*-algebra order↔norm bridge is
-> ℂ-only — `Matrix n n ℝ` is not a `CStarAlgebra`, verified.)*
+> *(Flagship packaging, AUDIT2 G8 + AUDIT3 H7: the Mathlib-preferred **Loewner** statements
+> `softmaxJac_posSemidef` (`0 ≤ J`) and `two_smul_softmaxJac_le_one` (`2•J ≤ 1`) are added — the `½`
+> operator-norm form stays the Rayleigh proof because Mathlib's C\*-algebra order↔norm bridge is
+> ℂ-only (`Matrix n n ℝ` is not a `CStarAlgebra`, verified). The softmax package is bundled as a
+> DKPS-style comparator candidate in [`Challenge/`](Challenge/README.md) —
+> `def softmax` + `hasFDerivAt_softmax` + `lipschitzWith_softmax` + the Loewner Jacobian bounds,
+> none of which exists in any Lean source.)*
 
 ## What VeriStressGT claims
 
@@ -90,6 +93,7 @@ gives its construction crosswalk.
 .
 ├── ForMathlib.lean / ForMathlib/     # DV-free reusable results (import: Mathlib only)
 ├── <Library>.lean / <Library>/       # one library per certificate family (import: Mathlib + ForMathlib)
+├── Challenge/ + comparator/          # Mathlib-candidate comparator package (softmax) — see Challenge/README.md
 ├── prose/                            # faithful transcriptions of every source theorem
 ├── papers/                           # fetch script + manifest (PDFs git-ignored)
 ├── theorem-map.md                    # published-theorem ⟷ construction crosswalk

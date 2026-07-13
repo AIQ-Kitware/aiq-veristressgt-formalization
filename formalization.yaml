@@ -92,6 +92,19 @@ status:
       - "bash setup_lean.sh"
       - "lake exe cache get   # fetch prebuilt Mathlib oleans"
       - "lake build"
+    challenge_commands:
+      - "lake build Challenge.MathlibCandidate.Softmax.Leaderboard   # axiom audit of the softmax candidate"
+      - "bash scripts/run_challenge_comparator.sh                     # full comparator sweep (needs external landrun/comparator/lean4export)"
+    comparator_configs:
+      - "comparator/candidate-01-softmax.json"
+    challenge_note: >
+      One MathlibCandidate (H7, DKPS parity): the softmax package — definition, Fréchet
+      derivative, tight ½-Lipschitz, and Loewner Jacobian bounds. Leaf theorems
+      lipschitzWith_softmax / softmaxJac_posSemidef / two_smul_softmaxJac_le_one, all
+      axiom-clean; `softmax` is absent from any Lean source (EXTERNAL-LEAN-SURVEY.md).
+      Conformance/Leaderboard build green (Conformance carries the intended `sorry` challenge
+      statements). The full landrun-sandboxed comparator run needs external tools
+      (docs/challenge/comparator-tools.md) and was not executed in this environment.
   scope: >
     Seven Lean libraries, one per certificate family (T1-T6) plus a shared
     ForMathlib staging library. Each library states its paper-facing certificate
@@ -211,13 +224,13 @@ status:
     open_gaps:
       - "UCLA report (NON-LEAN, finding RESOLVED + SHARPENED): compute_L_attn uses n/4, paper eq.54 uses n/2 (= machine-checked Z_deviation_n2/fixedPattern_robust_derived); confirmed code-vs-paper bug, 2× unsafe. VERIFIED EXPOSED: all shipped fixed-pattern instances use margin_slack=1.05<2 → none satisfies the paper's own certificate (Prop.7) under the corrected constant. See FINDING-attn-Lattn-n4.md. Action: REPORT to UCLA (optionally PGD/complete-verifier-check one instance)."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
-      - "H7 Challenge/ packaging (optional, DKPS parity): the softmax package (softmax_jacobian_opNorm_le_half + Loewner forms + softmax + hasFDerivAt_softmax + lipschitzWith_softmax) as the opening Mathlib PR / conformance unit."
     closed_this_pass:
       - "G1: fixed-pattern chain ASSEMBLED (Z_deviation/Z_deviation_n2) AND the full cert fixedPattern_robust_derived (step 1e, aggregate zflat + head + margin) — softmax construction fully certified from construction-level quantities, no assumed Lipschitz constant."
       - "G2 RESOLVED FROM SOURCES: read the VeriStressGT paper (eq.54 = n/2, from spectral ½) and Kim et al. (no n/4); the code's n/4 is a confirmed code-vs-paper bug (entrywise ¼ mis-substituted for spectral ½). Edge upgraded to kind: code-vs-paper-bug. FINDING-attn-Lattn-n4.md."
       - "G6 de-duplicated softmaxJac/sjJ (public in SoftmaxJacobianBound); G3–G5,G7,G9 reconciled."
       - "G8: the C*-order↔norm route is ℂ-only (Matrix n n ℝ not a CStarAlgebra, verified in Lean) — kept the Rayleigh norm proof and ADDED the Mathlib-preferred Loewner statements softmaxJac_posSemidef (0≤J) + two_smul_softmaxJac_le_one (2•J≤1) via posSemidef_iff_dotProduct_mulVec (works over ℝ), reusing the variance lemmas."
       - "AUDIT3 H1/H4/H5/H6/H8: exposure evidence (margin_slack=1.05) added to the finding+edge; fpK made public; abs_apply_le_norm de-duplicated into ForMathlib (PiLp.norm_apply_le); docstring 'n/2' + count reconciled to 63 audited declarations; H8 glue lemmas added so score_deviation_unit → score_row_deviation → fixedPattern_robust_derived compose (weights are the only remaining seam)."
+      - "H7 Challenge/comparator layer (DKPS parity): Challenge/MathlibCandidate/Softmax/{Conformance,Leaderboard}.lean + comparator/candidate-01-softmax.json + Challenge/README.md + [[lean_lib]] Challenge (not a default target) + comparator tooling scripts/docs. Leaf theorems: lipschitzWith_softmax, softmaxJac_posSemidef, two_smul_softmaxJac_le_one — the softmax package (def + fderiv + tight ½-Lipschitz + Loewner Jacobian bounds), absent from any Lean source."
     external_lean_survey: "EXTERNAL-LEAN-SURVEY.md (2026-07-09): no drop-in Lean source for R1/R2/R3; girving/interval is the reuse candidate ONLY for the float32-export edge (R9); TorchLean (nktkt/leanx) is a statement/differential-oracle reference (Lean 4.28, sorry'd float layer), not a dependency."
 
 # Edges to the empirical repo. Full tables + severities in ucla-formalization-edges.md.

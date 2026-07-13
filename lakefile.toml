@@ -51,3 +51,9 @@ name = "AlgebraicBoundary"
 # the card stands on). Makes the Family-B card edges explicit hypotheses.
 [[lean_lib]]
 name = "Verifier"
+
+# Comparator/challenge modules for community calibration of the Mathlib-candidate
+# softmax package (definition, Fréchet derivative, tight ½-Lipschitz, Loewner Jacobian
+# bounds). Intentionally NOT a default target — see Challenge/README.md.
+[[lean_lib]]
+name = "Challenge"

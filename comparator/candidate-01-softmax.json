@@ -1,0 +1,15 @@
+{
+  "challenge_module": "Challenge.MathlibCandidate.Softmax.Conformance",
+  "solution_module": "Challenge.MathlibCandidate.Softmax.Leaderboard",
+  "theorem_names": [
+    "VeriStressGT.ForMathlib.lipschitzWith_softmax",
+    "VeriStressGT.ForMathlib.softmaxJac_posSemidef",
+    "VeriStressGT.ForMathlib.two_smul_softmaxJac_le_one"
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "enable_nanoda": false
+}
