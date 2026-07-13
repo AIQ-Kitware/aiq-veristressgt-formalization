@@ -84,10 +84,22 @@ wrongly scored as failing. This corrupts exactly the ground truth the stress tes
 the class of defect this formalization-edges program exists to catch.
 
 The cushion is `margin_slack` (the construction sets `m_X0 = margin_slack · rhs_margin`,
-`margin_slack ≳ 1`, `fixed_pattern.py:239`): an instance is only actually unsound if its true
-margin falls in the band between the `n/4` threshold and the `n/2` threshold, i.e. when
-`margin_slack < 2`. Whether shipped sweeps use `margin_slack ≥ 2` (safe) or `< 2` (exposed)
-is the one quantitative question the edge tracks.
+`margin_slack ≳ 1`, `fixed_pattern.py:239`): the construction's *own theorem* certifies an
+instance only if `m_X0 > 2·L_h·√n·L_paper·ε`, and since the `n`-terms dominate `L_attn` at the
+shipped parameters `L_paper ≈ 2·L_code`, this needs roughly `margin_slack ≳ 2`.
+
+**The shipped sweeps are in the exposed regime (verified, AUDIT3 H1).** Every fixed-pattern
+instance in `configs/mini_sweep.yaml` (`fp_01…fp_08`) and `configs/sweep_all.yaml` uses
+**`margin_slack: 1.05`**; the CLI default (`fixed_pattern.py:202`) is `1.0001`. All are `< 2`.
+So under the paper-correct `n/2` constant, `m_X0 = 1.05·(2·L_h·√n·L_code·ε) < 2·L_h·√n·L_paper·ε`
+whenever the `n`-terms exceed ~5 % of `L_attn` — which they dominate (e.g. `fp_01`:
+`n=16, α=5, d=4, ε=5e-4` gives first term `(n/4)·B_S·V0_inf ≈ 80·V0_inf` vs value term `2σ`).
+**Therefore every shipped fixed-pattern instance fails the paper's own certificate condition:
+its UNSAT ground-truth label is *unproven by the construction's theorem*** (not necessarily
+*false* — the bound is sufficient, not necessary — but the benchmark's "provably robust by
+construction" guarantee does not hold for the instances as shipped). An optional empirical
+check (PGD / long-budget complete verifier on one instance) would tell whether any label is
+actually false rather than merely unproven; either outcome is worth reporting.
 
 ## 5. What we verified ourselves vs. what to ask UCLA
 
@@ -103,7 +115,9 @@ is the one quantitative question the edge tracks.
 > `compute_L_attn` uses `n/4` on the `‖V₀‖` and cross terms, but your Appendix-A.6 eq. 54 uses
 > `n/2` (from `‖∇softmax‖_op ≤ 1/2`). Is the `n/4` intentional? If so, what justifies it — it is
 > the *entrywise* Jacobian bound `maxₐ a(1−a)=¼`, not the *spectral* norm the ℓ² row-aggregation
-> (your eq. 52) requires. If not, `compute_L_attn` under-certifies `L_attn` by 2×, and any
-> shipped instance with `margin_slack < 2` may be a false-UNSAT ground-truth label.
+> (your eq. 52) requires. If not, `compute_L_attn` under-certifies `L_attn` by 2× — and since
+> every shipped fixed-pattern instance uses `margin_slack ≈ 1.05 < 2` (mini_sweep / sweep_all),
+> none satisfies your own certificate condition (Prop. 7) under the corrected constant, so their
+> "provably robust by construction" labels are unproven as shipped.
 
 Raise alongside the Appendix-A power-iteration item (edge `dccnn-L-power-iter`).

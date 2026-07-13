@@ -20,6 +20,7 @@ condition `m(X₀) > 2·L_h·√n·B_max` (line 206) carries no spurious `ε` fa
 
 import Mathlib
 import LipschitzMargin.Basic
+import ForMathlib.Analysis.OperatorNormLipschitz
 import SelfAttention.LinearDominance
 
 set_option autoImplicit false
@@ -29,17 +30,6 @@ open VeriStressGT.LipschitzMargin WithLp
 namespace VeriStressGT.SelfAttention
 
 variable {n d dv : ℕ}
-
-/-- A single coordinate of a Euclidean vector is bounded by its norm. -/
-private theorem abs_apply_le_norm {ι : Type*} [Fintype ι]
-    (v : EuclideanSpace ℝ ι) (j : ι) : |v j| ≤ ‖v‖ := by
-  have h : ‖v j‖ ≤ ‖v‖ := by
-    rw [EuclideanSpace.norm_eq,
-      show ‖v j‖ = Real.sqrt (‖v j‖ ^ 2) from (Real.sqrt_sq (norm_nonneg _)).symm]
-    apply Real.sqrt_le_sqrt
-    exact Finset.single_le_sum (f := fun i => ‖v i‖ ^ 2)
-      (fun i _ => sq_nonneg _) (Finset.mem_univ j)
-  rwa [Real.norm_eq_abs] at h
 
 /--
 **Diagonal gated-linear attention.**  Per-token output `Z i = w(X) i • V(X) i` with an
@@ -143,8 +133,8 @@ theorem margin_deviation (A : GatedAttn n d dv) {c : ℕ}
   have hz : ‖Δz‖ ≤ Real.sqrt n * Bmax :=
     zflat_deviation A X₀ ε Δw ΔV Bmax hBmax hw hV hB X hX
   have hop : ‖Whead Δz‖ ≤ ‖Whead‖ * ‖Δz‖ := Whead.le_opNorm Δz
-  have hcoordY : |Whead Δz y| ≤ ‖Whead Δz‖ := abs_apply_le_norm _ _
-  have hcoordK : |Whead Δz k| ≤ ‖Whead Δz‖ := abs_apply_le_norm _ _
+  have hcoordY : |Whead Δz y| ≤ ‖Whead Δz‖ := ForMathlib.abs_apply_le_norm _ _
+  have hcoordK : |Whead Δz k| ≤ ‖Whead Δz‖ := ForMathlib.abs_apply_le_norm _ _
   have htri : |Whead Δz y - Whead Δz k| ≤ |Whead Δz y| + |Whead Δz k| := by
     simpa only [Real.norm_eq_abs] using norm_sub_le (Whead Δz y) (Whead Δz k)
   have hznn : (0 : ℝ) ≤ Real.sqrt n * Bmax := mul_nonneg (Real.sqrt_nonneg _) hBmax

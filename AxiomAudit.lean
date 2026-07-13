@@ -77,6 +77,8 @@ open VeriStressGT
 #print axioms SelfAttention.FixedPatternAttn.zflat_deviation
 #print axioms SelfAttention.FixedPatternAttn.margin_deviation
 #print axioms SelfAttention.fixedPattern_robust_derived
+#print axioms SelfAttention.euclid_dist_le_sqrt_card_mul
+#print axioms SelfAttention.FixedPatternAttn.score_row_deviation
 
 -- IntervalBounds (4)
 #print axioms IntervalBounds.Layer.sound

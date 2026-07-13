@@ -23,6 +23,14 @@ open scoped NNReal
 
 namespace VeriStressGT.ForMathlib
 
+/-- A single coordinate of a Euclidean vector is bounded by its L²-norm:
+`|v j| ≤ ‖v‖`.  Thin wrapper over Mathlib's `PiLp.norm_apply_le`; the shared coordinate
+bound used by the attention certificates (audit AUDIT3 H5, de-duplicated from the two
+`SelfAttention` block files). -/
+theorem abs_apply_le_norm {ι : Type*} [Fintype ι]
+    (v : EuclideanSpace ℝ ι) (j : ι) : |v j| ≤ ‖v‖ := by
+  rw [← Real.norm_eq_abs]; exact PiLp.norm_apply_le v j
+
 /-- A `1`-Lipschitz activation composed with an affine map `x ↦ W x + b` keeps the
 Lipschitz constant equal to the operator norm of `W`.  (`W` is a continuous linear
 map; adding a constant `b` and postcomposing a `1`-Lipschitz `φ` preserve the

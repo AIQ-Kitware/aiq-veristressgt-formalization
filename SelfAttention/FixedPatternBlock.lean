@@ -34,6 +34,7 @@ the middle value term is coefficient-free because `‖softmax row‖₁ = 1`
 
 import Mathlib
 import LipschitzMargin.Basic
+import ForMathlib.Analysis.OperatorNormLipschitz
 import ForMathlib.Analysis.SoftmaxLipschitz
 
 set_option autoImplicit false
@@ -257,7 +258,7 @@ theorem FixedPatternAttn.Z_deviation [NeZero n] (A : FixedPatternAttn n d dv)
 /--
 **Assembled output deviation with the `n/2` coefficient exhibited (audit G1/G2).**  The
 same bound as `Z_deviation`, with the score-row deviation written in the code's form
-`ρ = √n·B_S·ε`: the leading term carries **`n/2`** (`√n·½·√n = n`), the honest coefficient
+`ρ = √n·B_S·ε`: the leading term carries **`n/2`** (`√n·½·√n = n/2`), the honest coefficient
 that `compute_L_attn`'s `n/4` under-estimates by 2× (edge `attn-Lattn-n4-pooling`).  This
 is the Lean anchor the edge claim now rests on — the derived bound, not the standalone
 arithmetic identity `pooling_leading_coeff`. -/
@@ -275,17 +276,6 @@ theorem FixedPatternAttn.Z_deviation_n2 [NeZero n] (A : FixedPatternAttn n d dv)
   rwa [hcoef] at h
 
 /-! ### Full fixed-pattern robustness certificate (AUDIT2 §5 step 1e) -/
-
-/-- A single coordinate of a Euclidean vector is bounded by its norm. -/
-private theorem abs_apply_le_norm {ι : Type*} [Fintype ι]
-    (v : EuclideanSpace ℝ ι) (j : ι) : |v j| ≤ ‖v‖ := by
-  have h : ‖v j‖ ≤ ‖v‖ := by
-    rw [EuclideanSpace.norm_eq,
-      show ‖v j‖ = Real.sqrt (‖v j‖ ^ 2) from (Real.sqrt_sq (norm_nonneg _)).symm]
-    apply Real.sqrt_le_sqrt
-    exact Finset.single_le_sum (f := fun i => ‖v i‖ ^ 2)
-      (fun i _ => sq_nonneg _) (Finset.mem_univ j)
-  rwa [Real.norm_eq_abs] at h
 
 /-- The flattened fixed-pattern output over all tokens (ℓ²-aggregated). -/
 noncomputable def FixedPatternAttn.zflat (A : FixedPatternAttn n d dv)
@@ -322,8 +312,10 @@ noncomputable def FixedPatternAttn.margin (A : FixedPatternAttn n d dv) {c : ℕ
   (Whead (A.zflat X) + bhead) y - (Whead (A.zflat X) + bhead) k
 
 /-- The per-token output-deviation budget `K = √m·(½ρ)·(Vmax+δV) + δV` (from `Z_deviation`,
-`m` = number of tokens). -/
-private noncomputable def fpK (m : ℕ) (ρ δV Vmax : ℝ) : ℝ :=
+`m` = number of tokens) — the Lean form of the paper's per-token `L_attn·ε` budget.  Public
+so downstream files can spell the bound in `margin_deviation`/`fixedPattern_robust_derived`
+(audit AUDIT3 H4). -/
+noncomputable def fpK (m : ℕ) (ρ δV Vmax : ℝ) : ℝ :=
   Real.sqrt m * ((1 / 2) * ρ) * (Vmax + δV) + δV
 
 /--
@@ -400,5 +392,37 @@ theorem fixedPattern_robust_derived [NeZero n] (A : FixedPatternAttn n d dv) {c 
     (2 * ‖Whead‖ * (Real.sqrt n * fpK n ρ δV Vmax)) ?_ (hmargin k hk) X hX
   intro X' hX'
   exact A.margin_deviation Whead bhead y k X₀ ε ρ δV Vmax hρ0 hδV0 hVmax0 hρ hδV hVmax X' hX'
+
+/-! ### L∞→ℓ² glue (AUDIT3 H8) — connecting `score_deviation_unit` to the certificate seams -/
+
+/-- **L∞-box → ℓ² glue.**  If every coordinate of `u − v` has magnitude `≤ c`, then the
+Euclidean distance is `≤ √m·c`.  This supplies both seam quantities of the fixed-pattern
+certificate: the token perturbation `√d·ε` (from the VNN-LIB L∞ ε-box) and the score-row
+deviation `√n·B_S·ε` (from the per-entry score bound of `score_deviation_unit`).  So the
+certificate's `hρ`/`hδV` hypotheses are one application of this lemma away from
+`score_deviation_unit` — the only genuine seam is the attention *weights* themselves. -/
+theorem euclid_dist_le_sqrt_card_mul {m : ℕ} (u v : EuclideanSpace ℝ (Fin m)) (c : ℝ)
+    (hc : 0 ≤ c) (h : ∀ j, |ofLp u j - ofLp v j| ≤ c) : dist u v ≤ Real.sqrt m * c := by
+  rw [EuclideanSpace.dist_eq,
+    show Real.sqrt m * c = Real.sqrt ((m : ℝ) * c ^ 2) from by
+      rw [Real.sqrt_mul (by positivity), Real.sqrt_sq hc]]
+  apply Real.sqrt_le_sqrt
+  calc ∑ j, dist (ofLp u j) (ofLp v j) ^ 2
+      ≤ ∑ _j : Fin m, c ^ 2 := by
+        apply Finset.sum_le_sum; intro j _
+        rw [Real.dist_eq]; nlinarith [h j, abs_nonneg (ofLp u j - ofLp v j)]
+    _ = (m : ℝ) * c ^ 2 := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+
+/-- **Score-row deviation from per-entry deviation (the cert's `hρ` seam).**  If every entry
+of the score row moves by `≤ B_S·ε` (which `score_deviation_unit` bounds for
+`Sᵢⱼ = α⟪Xᵢ,Xⱼ⟫`), the row's ℓ² deviation is `≤ √n·B_S·ε = ρ` — exactly the seam
+`fixedPattern_robust_derived` assumes.  Composes `score_deviation_unit → this →
+fixedPattern_robust_derived`. -/
+theorem FixedPatternAttn.score_row_deviation (A : FixedPatternAttn n d dv)
+    (X X₀ : Fin n → Fin d → ℝ) (i : Fin n) (BSε : ℝ) (hBSε : 0 ≤ BSε)
+    (h : ∀ j, |ofLp (A.score X i) j - ofLp (A.score X₀ i) j| ≤ BSε) :
+    ‖A.score X i - A.score X₀ i‖ ≤ Real.sqrt n * BSε := by
+  rw [← dist_eq_norm]; exact euclid_dist_le_sqrt_card_mul _ _ BSε hBSε h
 
 end VeriStressGT.SelfAttention

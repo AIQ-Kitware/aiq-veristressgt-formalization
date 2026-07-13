@@ -12,9 +12,10 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > published-theorem chain, the working conventions, and the known traps. This README is
 > just the build + library map.
 
-> **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** All **61 public
-> theorems** are proved; an independent `#print axioms` sweep ([`AxiomAudit.lean`](AxiomAudit.lean)
-> / [`scripts/check.sh`](scripts/check.sh)) shows only `{propext, Classical.choice, Quot.sound}`.
+> **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** Every substantive
+> theorem is proved; an independent `#print axioms` sweep over all **63 audited declarations**
+> ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
+> `{propext, Classical.choice, Quot.sound}`.
 > Both audit gaps (F2, F4b) are **fully closed** in Lean — for **both** attention constructions
 > and including the softmax `LipschitzWith ½` bound (F2-B). Not all theorems are equal weight —
 > see the three-tier breakdown in [`AUDIT.md`](AUDIT.md) §3. The flagship
