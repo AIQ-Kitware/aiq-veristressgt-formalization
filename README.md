@@ -16,6 +16,19 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > theorem is proved; an independent `#print axioms` sweep over all **62 audited declarations**
 > ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
 > `{propext, Classical.choice, Quot.sound}`.
+>
+> **What "proved" means here (scope, read before citing):** what is machine-checked is the
+> *published certificate theorems* — the T1–T6 templates each construction instantiates, plus,
+> for some constructions, the derivation of the sensitivity constant from construction-level
+> quantities (see the per-construction status below). This is **not** a proof that each *shipped*
+> instance is certifiably robust; on the contrary, the exercise surfaced two machine-checked ways
+> the shipped pipeline departs from a sound certificate (the two findings below). Concretely:
+> `linearDominance_robust_derived` closes the ideal certificate for the linear construction with
+> no assumed constant; the CNN certificate (`dccnn_robust_via_net_upper`) is proved for the ideal
+> `L` *modulo an explicit upper-bound hypothesis* the shipped power-iteration `L̂` does not meet
+> (edge `dccnn-L-power-iter`); the fixed-pattern chain is assembled with the per-token weights the
+> one remaining seam.
+>
 > Both audit gaps (F2, F4b) are **fully closed** in Lean — for **both** attention constructions
 > and including the softmax `LipschitzWith ½` bound (F2-B). Not all theorems are equal weight —
 > see the three-tier breakdown in [`AUDIT.md`](AUDIT.md) §3. The flagship
@@ -49,6 +62,13 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > `L_attn` by 2× vs its own paper — the **unsafe** direction (risk of false-UNSAT ground-truth
 > labels). This is exactly the class of defect the edges program exists to catch, now backed by a
 > machine-checked bound rather than prose.
+>
+> **Second finding — the shipped fixed-pattern instances are in the *exposed* regime (AUDIT3 H1).**
+> Every shipped fixed-pattern configuration sets `margin_slack = 1.05 < 2`, so under the paper's
+> own (corrected) constant *none* of them satisfies the certificate condition (Prop. 7): as
+> configured, their "robust/UNSAT" ground-truth labels are **not** established by the paper's
+> theorem. Together with the `n/4` bug, this is why the status above is careful to say the
+> formalization certifies the *published theorems*, not the shipped instances.
 >
 > *(Flagship packaging, AUDIT2 G8 + AUDIT3 H7: the Mathlib-preferred **Loewner** statements
 > `softmaxJac_posSemidef` (`0 ≤ J`) and `two_smul_softmaxJac_le_one` (`2•J ≤ 1`) are added — the `½`
@@ -122,19 +142,20 @@ Check a single file fast (no build lock): `lake env lean LipschitzMargin/Basic.l
 
 ## Next steps
 
-Both audit gaps (F2 including the softmax bound, and F4b) are landed. The remaining work is
-non-Lean adjudication and outside review.
+Both audit gaps (F2 including the softmax bound, and F4b) are landed; the DKPS-style comparator
+package now ships ([`Challenge/`](Challenge/README.md) — the softmax candidate: `def softmax` +
+`hasFDerivAt_softmax` + `lipschitzWith_softmax` + the Loewner Jacobian bounds); and the prior-art
+pass removed the one redundant local lemma in favour of Mathlib's `LipschitzWith.list_prod`
+(`netLipschitz` now calls it directly). The remaining work is non-Lean adjudication and outside
+review.
 
-1. **Adjudicate the `n/4` pooling (F2-C.3, edge `attn-Lattn-n4-pooling`):** find the halving
-   argument in Kim et al. (arXiv:2006.04710) — if none exists, this is a candidate Family-A
+1. **Adjudicate the `n/4` pooling (F2-C.3, edge `attn-Lattn-n4-pooling`):** locate the halving
+   argument in Kim et al. (arXiv:2006.04710) — if none exists, this is a confirmed Family-A
    soundness bug in `compute_L_attn` (certified `L_attn` ~2× too small, unsafe direction).
-   `pooling_leading_coeff` records the honest `n/2`; raise with UCLA.
+   `pooling_leading_coeff` records the honest `n/2`.
 2. **External review** of statement faithfulness to the PDFs — the concrete asks are in
    [`AUDIT.md`](AUDIT.md) §5 step 7.
-3. **DKPS parity (AUDIT.md §6):** package `softmax_jacobian_opNorm_le_half` **and its now-proved
-   consumer `lipschitzWith_softmax`** as a `Challenge/MathlibCandidate/` (the strongest upstream
-   candidate in the repo).
-4. **Optional (`float32-export`, R9):** adopt `girving/interval` if the float-soundness edge is
+3. **Optional (`float32-export`, R9):** adopt `girving/interval` if the float-soundness edge is
    prioritized ([`EXTERNAL-LEAN-SURVEY.md`](EXTERNAL-LEAN-SURVEY.md) §A).
 
 Reproduce the verification story at any time with [`scripts/check.sh`](scripts/check.sh)
