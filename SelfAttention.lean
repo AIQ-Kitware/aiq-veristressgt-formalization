@@ -14,3 +14,4 @@ import SelfAttention.ConcreteGlue
 import SelfAttention.FixedPatternConcrete
 import SelfAttention.LinearDominanceConcrete
 import SelfAttention.FixedPatternStable
+import SelfAttention.DominantKey

@@ -18,14 +18,14 @@ declarations the axiom audit covers. The machine-readable mirror is
   1. `lake build` — completed successfully, no errors.
   2. no-`sorry`/`admit` scan over `ForMathlib LipschitzMargin SelfAttention IntervalBounds
      ExactMILP AlgebraicBoundary Verifier` — `OK: no sorry/admit tactics.`
-  3. axiom audit — `#print axioms` over all **81 audited declarations**
+  3. axiom audit — `#print axioms` over all **82 audited declarations**
      ([`AxiomAudit.lean`](AxiomAudit.lean)) shows only `{propext, Classical.choice, Quot.sound}`
      (no `sorryAx`, `native_decide`, or `ofReduceBool`).
 
 **Scope of the claim.** "Proved" here means the *published certificate theorems* (T1–T6
 templates) and, for the concrete constructions, the derivation of the sensitivity constants
 from construction-level quantities. It is **not** a claim that every *shipped* instance is
-certifiably robust — see the two findings below. The 81 audited declarations are exactly the
+certifiably robust — see the two findings below. The 82 audited declarations are exactly the
 list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by this record.
 
 ## Reference-comparison roadmap (REFERENCE-COMPARISON.md §6)
@@ -37,7 +37,7 @@ list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by 
 | B3 tightness as theorems | ✅ landed | `softmaxJac_opNorm_eq_half_witness`, `lipschitzWith_softmax_optimal` |
 | B4 model unification + LM-4 | ✅ landed | `Layer.toAffLayer_eval`, `dccnn_robust_linf_box` |
 | B5 process parity | ✅ this file | — |
-| B6 optional depth | ⏳ optional | Lemma 8 dominant-key; heterogeneous-width `Layer`; sharper softmax row |
+| B6 optional depth | ✅ Lemma 8 landed | `attn_dominant_key_bound` (heterogeneous-width `Layer` + sharper softmax row remain as further optional depth) |
 
 ## Confirmed findings (machine-checked anchors; NON-LEAN action = report to UCLA)
 

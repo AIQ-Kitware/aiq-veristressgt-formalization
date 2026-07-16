@@ -13,7 +13,7 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > just the build + library map.
 
 > **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** Every substantive
-> theorem is proved; an independent `#print axioms` sweep over all **81 audited declarations**
+> theorem is proved; an independent `#print axioms` sweep over all **82 audited declarations**
 > ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
 > `{propext, Classical.choice, Quot.sound}`.
 >
@@ -184,8 +184,11 @@ roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md) §6, B1–B6
   score row for every `X` in the L∞ box** — the genuine "attention pattern constant on the
   box" statement, retiring the `PatternFixed` proxy caveat (edge `attn-fixed-pattern-gap`).
 
-With B1–B4 landed, the remaining reference-comparison items are B5 (process parity) and B6
-(optional depth); the standing non-Lean asks:
+**The full B1–B6 reference-comparison roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md)
+§6) is landed** — B5 added a dated, evidence-scoped [`STATUS.md`](STATUS.md), and B6's paper
+Lemma 8 dominant-key bound (`attn_dominant_key_bound`) makes the linear-dominance thread
+paper-complete. The remaining optional-depth items (heterogeneous-width `Layer`, the sharper
+`O(√(N log N))` softmax-row bound) and the standing non-Lean asks:
 
 1. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
    argument in Kim et al. (arXiv:2006.04710); if none exists, `compute_L_attn` under-certifies

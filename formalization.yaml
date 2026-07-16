@@ -75,7 +75,7 @@ status:
   repository_build:
     note: >
       VERIFIED GREEN, ZERO SORRY (last run 2026-07-10 via scripts/check.sh): `lake build`
-      clean, no sorry/admit, all 81 audited declarations axiom-clean {propext, Classical.choice,
+      clean, no sorry/admit, all 82 audited declarations axiom-clean {propext, Classical.choice,
       Quot.sound}. Both outside-audit gaps are closed in Lean: F4b (whole-network big-M wired
       to IBP box validity, ExactMILP/Network.lean) and F2 for BOTH attention constructions —
       linear (SelfAttention/LinearDominanceBlock.lean, DERIVED certificate) and softmax
@@ -111,7 +111,7 @@ status:
     theorem(s) fully proved (zero `sorry`), carrying the load-bearing edges as explicit
     hypotheses (e.g. LipschitzMargin.dccnn_robust_of_upper_bound takes the
     upper-bound premise the power-iteration `L̂` does not satisfy).
-  # All 81 audited declarations are proved (sorry_count 0) and axiom-clean
+  # All 82 audited declarations are proved (sorry_count 0) and axiom-clean
   # ({propext, Classical.choice, Quot.sound}) — verified by AxiomAudit.lean /
   # scripts/check.sh (56 through AUDIT2 + 2 Loewner (G8) + 3 fixed-pattern cert (step 1e) + 2 L∞→ℓ² glue (AUDIT3 H8)).
   # F2 (both attention constructions, incl. softmax LipschitzWith ½, the assembled fixed-pattern
@@ -174,6 +174,13 @@ status:
       file: "SelfAttention/FixedPatternBlock.lean"
       source: "T2 (arXiv:2006.04710) — compute_L_attn assembly (AUDIT2 G1)"
       grounds: "attention.fixed_pattern — DERIVED output bound ‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV)+δV; the Lean anchor for edge attn-Lattn-n4-pooling (honest n/2 vs code's n/4)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.attn_dominant_key_bound"   # B6: paper Lemma 8 (dominant-key)
+      file: "SelfAttention/DominantKey.lean"
+      source: "T2 (arXiv:2605.17153 Lemma 8, App.A.7) — B6 optional depth (REFERENCE-COMPARISON.md §6)"
+      grounds: "attention.linear_dominance — the paper's general dominant-key bound ‖∑ⱼaⱼVⱼ − V_{j*}‖ ≤ (1−a_{j*})·max_{j≠j*}‖Vⱼ−V_{j*}‖ for any probability weights a (softmax discharges hnn/hsum), making the linear-dominance thread paper-complete rather than code-complete (diagonal special case)"
       tier: substantive
       sorry_count: 0
       axioms: [propext, Classical.choice, Quot.sound]
@@ -256,7 +263,7 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 81 audited declarations) + scripts/check.sh"
+    method: "AxiomAudit.lean (#print axioms on all 82 audited declarations) + scripts/check.sh"
     last_run: "2026-07-16"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
@@ -268,6 +275,7 @@ status:
       - "UCLA report (NON-LEAN, SECOND FINDING, 2026-07-16): cnn.deep_contractive_cnn certifies on an L∞ ε-box with a SPECTRAL (ℓ²) Lipschitz constant but omits the ℓ∞→ℓ² conversion factor √d. cert_bound = L·2ε (deep_contractive_cnn.py:227) vs honest L·√d·ε (machine-checked dccnn_robust_linf_box). For input dim d>4, √d>2 so the code under-certifies the perturbation → margin B too small → false-UNSAT (unsafe). The 10% slack cannot absorb √d for d≥5 (image-scale d makes it orders of magnitude off); deep nets are accidentally safe via the 1e-3 floor. See FINDING-dccnn-linf-sqrtd.md; edge dccnn-linf-sqrtd-metric. Action: REPORT to UCLA (PGD/complete-verifier check a shallow d≥5 instance)."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
     closed_this_pass:
+      - "B6 PAPER LEMMA 8 DOMINANT-KEY BOUND (2026-07-16, REFERENCE-COMPARISON.md §6 optional depth): SelfAttention/DominantKey.lean proves attn_dominant_key_bound — for any probability weights a, ‖∑ⱼ aⱼ·Vⱼ − V_{j*}‖ ≤ (1−a_{j*})·M where M bounds ‖Vⱼ−V_{j*}‖ over competitors. As a_{j*}→1 the attention output collapses onto the dominant value; specialised at a=softmax (softmax_nonneg/softmax_sum_one) this is the paper's Lemma 8, making the linear-dominance thread paper-complete (not just the exact-diagonal GatedAttn case). +1 audited decl (81→82). All B1–B6 roadmap items now landed."
       - "B2 PATTERN STABILITY (paper Prop.6) ON THE CONCRETE INSTANCE (2026-07-16, REFERENCE-COMPARISON.md §6): SelfAttention/FixedPatternStable.lean proves dotProductAttn_pattern_stable — for the concrete dotProductAttn, if the nominal score gap to π* exceeds 2·B_S·ε for every competitor, then π* is the STRICT argmax of the score row for EVERY X in the L∞ box (not just at X₀). This is the genuine 'attention pattern is constant on the box' proposition, retiring the PatternFixed proxy caveat that the docstrings carried since the first audit (edge attn-fixed-pattern-gap/SA-3). Entry deviation via dotProductAttn_score_entry_dev (score_deviation_unit, B_S·ε = |α|(2√d·ε+d·ε²)). +2 audited decls (79→81; true pre-B1 baseline was 63, not the 62 earlier docs miscounted)."
       - "B4 L∞-BOX √d CERTIFICATE + MODEL BRIDGE (2026-07-16, REFERENCE-COMPARISON.md §6): unified the two network models and settled edge LM-4, producing a SECOND code finding. LipschitzMargin/DccnnLInfBox.lean: dccnn_robust_linf_box states the honest threshold g(x₀)>L·√d·ε over the VNN-LIB L∞ box (dist_le_sqrt_dim_mul_linf: L∞ per-coord ≤ε ⟹ ℓ² dist ≤√d·ε), exposing the √d the shipped cert_bound=L·2ε omits (unsafe for d>4 — see the open_gaps SECOND FINDING + FINDING-dccnn-linf-sqrtd.md). Layer.toAffLayer_eval bridges IntervalBounds.Layer (IBP/MILP, sup-metric Fin n→ℝ) and LipschitzMargin.AffLayer (T1′ spectral, EuclideanSpace): both compute the same map, so the two network formalizations are one object. +3 audited decls (76→79)."
       - "B3 TIGHTNESS AS THEOREMS (2026-07-16, REFERENCE-COMPARISON.md §6): the softmax ½ bounds were claimed tight in docstrings only; now machine-checked in ForMathlib/Analysis/SoftmaxTight.lean. softmaxJac_opNorm_eq_half_witness: ‖softmaxJac(½,½)‖=½ (v=(1,-1) is a ½-eigenvector since ∑aⱼvⱼ=0, so ½≤‖J‖≤½). lipschitzWith_softmax_optimal: no K<½ is a Lipschitz constant of softmax on EuclideanSpace ℝ (Fin 2) (fderiv at s=0 = toEuclideanCLM(softmaxJac(softmax 0)) has norm ½; HasFDerivAt.le_of_lipschitz). With lipschitzWith_softmax this pins the constant to exactly ½ — the sharpness upstream maintainers ask for. +2 audited decls (74→76)."
