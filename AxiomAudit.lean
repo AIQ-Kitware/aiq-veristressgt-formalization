@@ -107,6 +107,10 @@ open VeriStressGT
 #print axioms SelfAttention.innerGate_V_apply
 #print axioms SelfAttention.linearDominance_robust_concrete
 
+-- SelfAttention.FixedPatternStable — B2 paper Prop 6 pattern stability (2)
+#print axioms SelfAttention.dotProductAttn_score_entry_dev
+#print axioms SelfAttention.dotProductAttn_pattern_stable
+
 -- IntervalBounds (4)
 #print axioms IntervalBounds.Layer.sound
 #print axioms IntervalBounds.ibp_network_sound

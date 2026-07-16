@@ -177,6 +177,13 @@ status:
       tier: substantive
       sorry_count: 0
       axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.dotProductAttn_pattern_stable"   # B2: + dotProductAttn_score_entry_dev
+      file: "SelfAttention/FixedPatternStable.lean"
+      source: "T2 (arXiv:2605.17153 Prop.6) — B2 pattern stability (REFERENCE-COMPARISON.md §6)"
+      grounds: "attention.fixed_pattern — the paper's Prop 6 on the concrete dotProductAttn: π* is the STRICT argmax of the score row for EVERY X in the L∞ box (not just X₀), when the nominal gap > 2·B_S·ε. Retires the PatternFixed proxy caveat (edge attn-fixed-pattern-gap/SA-3)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
     - declaration: "VeriStressGT.SelfAttention.pooling_leading_coeff"
       file: "SelfAttention/FixedPatternBlock.lean"
       source: "T2 (arXiv:2006.04710) — pooling arithmetic"
@@ -249,7 +256,7 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 78 audited declarations) + scripts/check.sh"
+    method: "AxiomAudit.lean (#print axioms on all 80 audited declarations) + scripts/check.sh"
     last_run: "2026-07-16"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
@@ -261,6 +268,7 @@ status:
       - "UCLA report (NON-LEAN, SECOND FINDING, 2026-07-16): cnn.deep_contractive_cnn certifies on an L∞ ε-box with a SPECTRAL (ℓ²) Lipschitz constant but omits the ℓ∞→ℓ² conversion factor √d. cert_bound = L·2ε (deep_contractive_cnn.py:227) vs honest L·√d·ε (machine-checked dccnn_robust_linf_box). For input dim d>4, √d>2 so the code under-certifies the perturbation → margin B too small → false-UNSAT (unsafe). The 10% slack cannot absorb √d for d≥5 (image-scale d makes it orders of magnitude off); deep nets are accidentally safe via the 1e-3 floor. See FINDING-dccnn-linf-sqrtd.md; edge dccnn-linf-sqrtd-metric. Action: REPORT to UCLA (PGD/complete-verifier check a shallow d≥5 instance)."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
     closed_this_pass:
+      - "B2 PATTERN STABILITY (paper Prop.6) ON THE CONCRETE INSTANCE (2026-07-16, REFERENCE-COMPARISON.md §6): SelfAttention/FixedPatternStable.lean proves dotProductAttn_pattern_stable — for the concrete dotProductAttn, if the nominal score gap to π* exceeds 2·B_S·ε for every competitor, then π* is the STRICT argmax of the score row for EVERY X in the L∞ box (not just at X₀). This is the genuine 'attention pattern is constant on the box' proposition, retiring the PatternFixed proxy caveat that the docstrings carried since the first audit (edge attn-fixed-pattern-gap/SA-3). Entry deviation via dotProductAttn_score_entry_dev (score_deviation_unit, B_S·ε = |α|(2√d·ε+d·ε²)). +2 audited decls (78→80)."
       - "B4 L∞-BOX √d CERTIFICATE + MODEL BRIDGE (2026-07-16, REFERENCE-COMPARISON.md §6): unified the two network models and settled edge LM-4, producing a SECOND code finding. LipschitzMargin/DccnnLInfBox.lean: dccnn_robust_linf_box states the honest threshold g(x₀)>L·√d·ε over the VNN-LIB L∞ box (dist_le_sqrt_dim_mul_linf: L∞ per-coord ≤ε ⟹ ℓ² dist ≤√d·ε), exposing the √d the shipped cert_bound=L·2ε omits (unsafe for d>4 — see the open_gaps SECOND FINDING + FINDING-dccnn-linf-sqrtd.md). Layer.toAffLayer_eval bridges IntervalBounds.Layer (IBP/MILP, sup-metric Fin n→ℝ) and LipschitzMargin.AffLayer (T1′ spectral, EuclideanSpace): both compute the same map, so the two network formalizations are one object. +3 audited decls (75→78)."
       - "B3 TIGHTNESS AS THEOREMS (2026-07-16, REFERENCE-COMPARISON.md §6): the softmax ½ bounds were claimed tight in docstrings only; now machine-checked in ForMathlib/Analysis/SoftmaxTight.lean. softmaxJac_opNorm_eq_half_witness: ‖softmaxJac(½,½)‖=½ (v=(1,-1) is a ½-eigenvector since ∑aⱼvⱼ=0, so ½≤‖J‖≤½). lipschitzWith_softmax_optimal: no K<½ is a Lipschitz constant of softmax on EuclideanSpace ℝ (Fin 2) (fderiv at s=0 = toEuclideanCLM(softmaxJac(softmax 0)) has norm ½; HasFDerivAt.le_of_lipschitz). With lipschitzWith_softmax this pins the constant to exactly ½ — the sharpness upstream maintainers ask for. +2 audited decls (73→75)."
       - "B1 CONCRETIZATION LAYER (2026-07-16, REFERENCE-COMPARISON.md §6): closes the one R1/R2 discipline gap the reference-comparison pass found — the attention/CNN certificates were proved over ABSTRACT blocks (FixedPatternAttn/GatedAttn/AffLayer), so the derivable deviation facts entered as hypotheses. Now three concrete instances construct the shipped maps and DERIVE those facts: (a) SelfAttention/FixedPatternConcrete.lean — dotProductAttn α W_V (score Sᵢⱼ=α⟪Xᵢ,Xⱼ⟫, value W_V Xⱼ); fixedPattern_robust_concrete discharges hρ (score_deviation_unit→score_row_deviation) and hδV (W_V op-norm), leaving only weights/unit-token/Vmax/margin. (b) SelfAttention/LinearDominanceConcrete.lean — innerGate Q K W_V (gate ⟪Q Xᵢ,K Xᵢ⟫); linearDominance_robust_concrete discharges hw (inner_deviation_bound) and hV, honest Δw=‖Q‖√dε(g+‖K‖√dε)+g‖K‖√dε ≤ code's 2ε(g+ε). (c) LipschitzMargin/DeepContractiveCNNConcrete.lean — reluMap proved LipschitzWith 1 (pointwise |max a 0−max b 0|≤|a−b| in ℓ²), reluLayer discharges AffLayer.hact. Shared L∞→ℓ² glue in SelfAttention/ConcreteGlue.lean (token_l2_dev: ‖ΔXᵢ‖₂≤√d·ε). +11 audited declarations (62→73); scripts/check.sh green."
@@ -359,14 +367,15 @@ edges:
   - id: attn-fixed-pattern-gap
     card: ta1/VeriStressGT/cards/evaluation.yaml
     construction: attention.fixed_pattern
+    status: "PROXY RETIRED (2026-07-16, B2): the genuine 'constant on the box' proposition is now proved on the concrete instance (dotProductAttn_pattern_stable)."
     assumption:
-      theorem: "T2 softmax argmax pattern constant on the box"
-      lean: VeriStressGT.SelfAttention.gap_iff_stability_margin   # the gap ⟺ δ_min > ε·C_max equivalence
+      theorem: "T2 (Prop.6) softmax argmax pattern constant on the box — NOW as stated: π* is the strict argmax of the score row for EVERY X in the box (dotProductAttn_pattern_stable), not just the X₀ gap equivalence"
+      lean: VeriStressGT.SelfAttention.dotProductAttn_pattern_stable   # Prop 6 on the concrete instance; gap_iff_stability_margin is the arithmetic core
       prose: prose/self-attention-lipschitz.md   # SA-3
     relaxation:
       code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/attention/fixed_pattern.py
       line: 82
-      informal: "Coherence inequality 1−μ > 4ε√d+2ε²d checked at X₀ only, as a sufficient proxy for pattern-invariance."
+      informal: "Shipped check_certificate tests the coherence inequality 1−μ > 4ε√d+2ε²d at X₀ only. The Lean side now proves the quantified box statement (nominal gap > 2·B_S·ε ⟹ π* strict argmax ∀X in box); the residual edge is only whether the code's X₀-check implies that hypothesis for the shipped configs."
     kind: proxy-condition
     severity: med
   # --- added per audit F2-C.3 (GUIDANCE-F2-F4b.md §F2-C.3): candidate soundness bug ---

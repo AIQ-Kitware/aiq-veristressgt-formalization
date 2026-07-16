@@ -175,14 +175,21 @@ roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md) §6, B1–B6
   box using `cert_bound = L·2ε` with **no `√d`**. The honest threshold is `L·√d·ε`
   (`dccnn_robust_linf_box`); for input dimension `d > 4` the code under-certifies the
   perturbation — the **unsafe** direction, structurally identical to the `n/4` finding.
+- ✅ **B2 PATTERN STABILITY (landed 2026-07-16).**
+  [`SelfAttention/FixedPatternStable.lean`](SelfAttention/FixedPatternStable.lean) proves the
+  paper's Prop 6 on the concrete instance (`dotProductAttn_pattern_stable`): if the nominal
+  score gap to `π*` exceeds `2·B_S·ε` for every competitor, `π*` is the **strict argmax of the
+  score row for every `X` in the L∞ box** — the genuine "attention pattern constant on the
+  box" statement, retiring the `PatternFixed` proxy caveat (edge `attn-fixed-pattern-gap`).
 
-Remaining reference-comparison items and the standing non-Lean asks:
+With B1–B4 landed, the remaining reference-comparison items are B5 (process parity) and B6
+(optional depth); the standing non-Lean asks:
 
-1. **B2 (reference-comparison §6):** paper Prop 6 pattern-stability as stated on the B1
-   concrete instance (retires the `PatternFixed` docstring caveat).
-2. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
+1. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
    argument in Kim et al. (arXiv:2006.04710); if none exists, `compute_L_attn` under-certifies
    `L_attn` ~2× (unsafe). `Z_deviation_n2`/`pooling_leading_coeff` record the honest `n/2`.
+2. **Report the two confirmed findings to UCLA** (`attn-Lattn-n4`, `dccnn-linf-sqrtd-metric`),
+   optionally PGD/complete-verifier-checking one shipped instance each.
 3. **External review** of statement faithfulness to the PDFs ([`AUDIT.md`](AUDIT.md) §5 step 7);
    optional `float32-export` (R9) via `girving/interval`.
 
