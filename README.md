@@ -13,7 +13,7 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > just the build + library map.
 
 > **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** Every substantive
-> theorem is proved; an independent `#print axioms` sweep over all **73 audited declarations**
+> theorem is proved; an independent `#print axioms` sweep over all **81 audited declarations**
 > ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
 > `{propext, Classical.choice, Quot.sound}`.
 >
@@ -34,7 +34,9 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > see the three-tier breakdown in [`AUDIT.md`](AUDIT.md) §3. The flagship
 > `ForMathlib.softmax_jacobian_opNorm_le_half` (`‖diag a − aaᵀ‖₂ ≤ ½`, tight) is proved via the
 > self-adjoint operator-norm = sup-Rayleigh route. **Single source of truth for status:
-> [`formalization.yaml`](formalization.yaml)** (`review:` section); this block summarizes it.
+> [`formalization.yaml`](formalization.yaml)** (`review:` section) with a dated,
+> evidence-scoped [`STATUS.md`](STATUS.md) (what was checked, at which commit, by which
+> command); this block summarizes them.
 >
 > Three review passes are folded in — [`AUDIT.md`](AUDIT.md) (F1–F11),
 > [`GUIDANCE-F2-F4b.md`](GUIDANCE-F2-F4b.md), and [`AUDIT2.md`](AUDIT2.md) (G1–G9):
