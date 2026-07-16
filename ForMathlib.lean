@@ -11,6 +11,7 @@ See `ForMathlib/README.md` for the candidate list and status.
 import ForMathlib.Analysis.OperatorNormLipschitz
 import ForMathlib.Analysis.SoftmaxJacobianBound
 import ForMathlib.Analysis.SoftmaxLipschitz
+import ForMathlib.Analysis.SoftmaxTight
 import ForMathlib.Analysis.IntervalArithmeticSound
 -- Topology/RobustBallOffClosed removed: the intended lemma already exists as
 -- `Metric.disjoint_closedBall_of_lt_infDist` (Mathlib

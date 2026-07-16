@@ -160,13 +160,18 @@ roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md) §6, B1–B6
   (`reluMap` proved `LipschitzWith 1`, `reluLayer` discharges `AffLayer.hact`); shared
   L∞→ℓ² glue in [`SelfAttention/ConcreteGlue.lean`](SelfAttention/ConcreteGlue.lean).
   The concrete end-states carry only weights + normalization + margin as hypotheses.
+- ✅ **B3 TIGHTNESS (landed 2026-07-16).** The softmax `½` bounds, previously tight in
+  docstrings only, are now theorems in
+  [`ForMathlib/Analysis/SoftmaxTight.lean`](ForMathlib/Analysis/SoftmaxTight.lean):
+  `softmaxJac_opNorm_eq_half_witness` (`‖J(½,½)‖₂ = ½`, via the `(1,−1)` eigenvector) and
+  `lipschitzWith_softmax_optimal` (no `K < ½` is a Lipschitz constant) — sharpness that
+  strengthens the softmax Mathlib candidate.
 
-Remaining reference-comparison items (B2–B6) and the standing non-Lean asks:
+Remaining reference-comparison items and the standing non-Lean asks:
 
-1. **B2–B4 (reference-comparison §6):** Prop 6 pattern-stability as stated on the concrete
-   instance; tightness (`‖J‖₂ = ½`) as theorems; unify `IntervalBounds.Layer` with
-   `LipschitzMargin.AffLayer` to settle edge LM-4 (the `√d` ℓ∞-vs-ℓ² bookkeeping — a live
-   chance of a second code finding).
+1. **B2 / B4 (reference-comparison §6):** Prop 6 pattern-stability as stated on the concrete
+   instance; unify `IntervalBounds.Layer` with `LipschitzMargin.AffLayer` to settle edge
+   LM-4 (the `√d` ℓ∞-vs-ℓ² bookkeeping — a live chance of a second code finding).
 2. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
    argument in Kim et al. (arXiv:2006.04710); if none exists, `compute_L_attn` under-certifies
    `L_attn` ~2× (unsafe). `Z_deviation_n2`/`pooling_leading_coeff` record the honest `n/2`.

@@ -37,6 +37,10 @@ open VeriStressGT
 #print axioms ForMathlib.hasFDerivAt_softmax
 #print axioms ForMathlib.lipschitzWith_softmax
 
+-- ForMathlib.SoftmaxTight — B3 tightness witnesses (2)
+#print axioms ForMathlib.softmaxJac_opNorm_eq_half_witness
+#print axioms ForMathlib.lipschitzWith_softmax_optimal
+
 -- LipschitzMargin.Basic (3)
 #print axioms LipschitzMargin.robust_of_margin_gt
 #print axioms LipschitzMargin.argmax_stable_of_margin_gt

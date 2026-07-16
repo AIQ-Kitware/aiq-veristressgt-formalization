@@ -135,6 +135,13 @@ status:
       sorry_count: 0
       axioms: [propext, Classical.choice, Quot.sound]
       note: "UNCONDITIONAL LipschitzWith ½ softmax. hasFDerivAt_softmax computes the fderiv on EuclideanSpace (hasFDerivWithinAt_piLp + scalar quotient rule + softmaxJac_mulVec); then mean-value inequality + softmax_jacobian_opNorm_le_half. The completed ForMathlib upstream candidate."
+    - declaration: "VeriStressGT.ForMathlib.softmaxJac_opNorm_eq_half_witness"   # B3: + lipschitzWith_softmax_optimal
+      file: "ForMathlib/Analysis/SoftmaxTight.lean"
+      source: "T2 / R2 (arXiv:2510.23012, ½ tight) — B3 sharpness (REFERENCE-COMPARISON.md §6)"
+      grounds: "the ½ Jacobian/Lipschitz bounds are TIGHT — machine-checked, not docstring: v=(1,-1) is a ½-eigenvector of softmaxJac(½,½) so ‖J‖=½; and lipschitzWith_softmax_optimal shows no K<½ is Lipschitz (derivative at s=0 has norm ½). Strengthens the softmax Mathlib candidate."
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
     - declaration: "VeriStressGT.LipschitzMargin.netLipschitz"
       file: "LipschitzMargin/DeepContractiveCNN.lean"
       source: "T1' (Parseval/spectral composition)"
@@ -235,7 +242,7 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 73 audited declarations) + scripts/check.sh"
+    method: "AxiomAudit.lean (#print axioms on all 75 audited declarations) + scripts/check.sh"
     last_run: "2026-07-16"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
@@ -246,6 +253,7 @@ status:
       - "UCLA report (NON-LEAN, finding RESOLVED + SHARPENED): compute_L_attn uses n/4, paper eq.54 uses n/2 (= machine-checked Z_deviation_n2/fixedPattern_robust_derived); confirmed code-vs-paper bug, 2× unsafe. VERIFIED EXPOSED: all shipped fixed-pattern instances use margin_slack=1.05<2 → none satisfies the paper's own certificate (Prop.7) under the corrected constant. See FINDING-attn-Lattn-n4.md. Action: REPORT to UCLA (optionally PGD/complete-verifier-check one instance)."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
     closed_this_pass:
+      - "B3 TIGHTNESS AS THEOREMS (2026-07-16, REFERENCE-COMPARISON.md §6): the softmax ½ bounds were claimed tight in docstrings only; now machine-checked in ForMathlib/Analysis/SoftmaxTight.lean. softmaxJac_opNorm_eq_half_witness: ‖softmaxJac(½,½)‖=½ (v=(1,-1) is a ½-eigenvector since ∑aⱼvⱼ=0, so ½≤‖J‖≤½). lipschitzWith_softmax_optimal: no K<½ is a Lipschitz constant of softmax on EuclideanSpace ℝ (Fin 2) (fderiv at s=0 = toEuclideanCLM(softmaxJac(softmax 0)) has norm ½; HasFDerivAt.le_of_lipschitz). With lipschitzWith_softmax this pins the constant to exactly ½ — the sharpness upstream maintainers ask for. +2 audited decls (73→75)."
       - "B1 CONCRETIZATION LAYER (2026-07-16, REFERENCE-COMPARISON.md §6): closes the one R1/R2 discipline gap the reference-comparison pass found — the attention/CNN certificates were proved over ABSTRACT blocks (FixedPatternAttn/GatedAttn/AffLayer), so the derivable deviation facts entered as hypotheses. Now three concrete instances construct the shipped maps and DERIVE those facts: (a) SelfAttention/FixedPatternConcrete.lean — dotProductAttn α W_V (score Sᵢⱼ=α⟪Xᵢ,Xⱼ⟫, value W_V Xⱼ); fixedPattern_robust_concrete discharges hρ (score_deviation_unit→score_row_deviation) and hδV (W_V op-norm), leaving only weights/unit-token/Vmax/margin. (b) SelfAttention/LinearDominanceConcrete.lean — innerGate Q K W_V (gate ⟪Q Xᵢ,K Xᵢ⟫); linearDominance_robust_concrete discharges hw (inner_deviation_bound) and hV, honest Δw=‖Q‖√dε(g+‖K‖√dε)+g‖K‖√dε ≤ code's 2ε(g+ε). (c) LipschitzMargin/DeepContractiveCNNConcrete.lean — reluMap proved LipschitzWith 1 (pointwise |max a 0−max b 0|≤|a−b| in ℓ²), reluLayer discharges AffLayer.hact. Shared L∞→ℓ² glue in SelfAttention/ConcreteGlue.lean (token_l2_dev: ‖ΔXᵢ‖₂≤√d·ε). +11 audited declarations (62→73); scripts/check.sh green."
       - "G1: fixed-pattern chain ASSEMBLED (Z_deviation/Z_deviation_n2) AND the full cert fixedPattern_robust_derived (step 1e, aggregate zflat + head + margin) — softmax construction fully certified from construction-level quantities, no assumed Lipschitz constant."
       - "G2 RESOLVED FROM SOURCES: read the VeriStressGT paper (eq.54 = n/2, from spectral ½) and Kim et al. (no n/4); the code's n/4 is a confirmed code-vs-paper bug (entrywise ¼ mis-substituted for spectral ½). Edge upgraded to kind: code-vs-paper-bug. FINDING-attn-Lattn-n4.md."
