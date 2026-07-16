@@ -166,12 +166,20 @@ roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md) §6, B1–B6
   `softmaxJac_opNorm_eq_half_witness` (`‖J(½,½)‖₂ = ½`, via the `(1,−1)` eigenvector) and
   `lipschitzWith_softmax_optimal` (no `K < ½` is a Lipschitz constant) — sharpness that
   strengthens the softmax Mathlib candidate.
+- ✅ **B4 + SECOND FINDING (landed 2026-07-16).**
+  [`LipschitzMargin/DccnnLInfBox.lean`](LipschitzMargin/DccnnLInfBox.lean) unifies the two
+  network models (`Layer.toAffLayer_eval`: the IBP `IntervalBounds.Layer` and the T1′
+  `AffLayer` compute the same map) and settles **edge LM-4** — which surfaced a **second
+  confirmed code finding** ([`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md)):
+  `cnn.deep_contractive_cnn` applies a *spectral (ℓ²)* Lipschitz constant to the *L∞* VNN-LIB
+  box using `cert_bound = L·2ε` with **no `√d`**. The honest threshold is `L·√d·ε`
+  (`dccnn_robust_linf_box`); for input dimension `d > 4` the code under-certifies the
+  perturbation — the **unsafe** direction, structurally identical to the `n/4` finding.
 
 Remaining reference-comparison items and the standing non-Lean asks:
 
-1. **B2 / B4 (reference-comparison §6):** Prop 6 pattern-stability as stated on the concrete
-   instance; unify `IntervalBounds.Layer` with `LipschitzMargin.AffLayer` to settle edge
-   LM-4 (the `√d` ℓ∞-vs-ℓ² bookkeeping — a live chance of a second code finding).
+1. **B2 (reference-comparison §6):** paper Prop 6 pattern-stability as stated on the B1
+   concrete instance (retires the `PatternFixed` docstring caveat).
 2. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
    argument in Kim et al. (arXiv:2006.04710); if none exists, `compute_L_attn` under-certifies
    `L_attn` ~2× (unsafe). `Z_deviation_n2`/`pooling_leading_coeff` record the honest `n/2`.

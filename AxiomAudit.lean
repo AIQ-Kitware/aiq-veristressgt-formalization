@@ -61,6 +61,11 @@ open VeriStressGT
 #print axioms LipschitzMargin.reluLayer_W
 #print axioms LipschitzMargin.dccnn_robust_concrete
 
+-- LipschitzMargin.DccnnLInfBox — B4 honest L∞-box √d certificate + model bridge (3)
+#print axioms LipschitzMargin.dist_le_sqrt_dim_mul_linf
+#print axioms LipschitzMargin.dccnn_robust_linf_box
+#print axioms LipschitzMargin.Layer.toAffLayer_eval
+
 -- SelfAttention (5)
 #print axioms SelfAttention.linearDominance_token_bound
 #print axioms SelfAttention.linearDominance_robust

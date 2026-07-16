@@ -101,6 +101,12 @@ Numbered so `ucla-formalization-edges.md` can cite them (`LM-#`).
   `L₂` vs. `L∞→L₁` duality) must match the VNN-LIB `L∞` box exactly — an easy
   place for an off-by-a-constant that either loosens (safe) or, if wrong,
   invalidates the ground truth.
+  **RESOLVED (2026-07-16) — SECOND FINDING.** The spectral (ℓ²) constant `L` is
+  applied to the `L∞` ε-box with `2ε` and **no `√d`**: the honest ℓ∞→ℓ² radius is
+  `√d·ε`, so the honest threshold is `L·√d·ε`, not `L·2ε`. For input dim `d > 4`
+  the code under-certifies (unsafe / false-UNSAT). Machine-checked anchor
+  `LipschitzMargin.dccnn_robust_linf_box`; see `FINDING-dccnn-linf-sqrtd.md`,
+  edge `dccnn-linf-sqrtd-metric`.
 - **LM-5 (empirical check is not a proof).** `verify_certificate_empirically`
   (line 307) samples **20 000** random `δ` and checks all-correct. This is a
   *sanity test of the construction*, not a certificate; a passing empirical check
