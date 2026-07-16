@@ -52,6 +52,11 @@ open VeriStressGT
 #print axioms LipschitzMargin.dccnn_robust_of_true_L
 #print axioms LipschitzMargin.dccnn_robust_of_upper_bound
 
+-- LipschitzMargin.DeepContractiveCNNConcrete — B1.6 concrete ReLU activation (3)
+#print axioms LipschitzMargin.lipschitzWith_reluMap
+#print axioms LipschitzMargin.reluLayer_W
+#print axioms LipschitzMargin.dccnn_robust_concrete
+
 -- SelfAttention (5)
 #print axioms SelfAttention.linearDominance_token_bound
 #print axioms SelfAttention.linearDominance_robust
@@ -78,6 +83,20 @@ open VeriStressGT
 #print axioms SelfAttention.fixedPattern_robust_derived
 #print axioms SelfAttention.euclid_dist_le_sqrt_card_mul
 #print axioms SelfAttention.FixedPatternAttn.score_row_deviation
+
+-- SelfAttention.ConcreteGlue — B1 shared L∞→ℓ² token glue (2)
+#print axioms SelfAttention.token_l2_dev
+#print axioms SelfAttention.clm_token_dev
+
+-- SelfAttention.FixedPatternConcrete — B1 concrete dot-product instance (3)
+#print axioms SelfAttention.dotProductAttn_score_apply
+#print axioms SelfAttention.dotProductAttn_V_apply
+#print axioms SelfAttention.fixedPattern_robust_concrete
+
+-- SelfAttention.LinearDominanceConcrete — B1 concrete inner-product gate (3)
+#print axioms SelfAttention.innerGate_w_apply
+#print axioms SelfAttention.innerGate_V_apply
+#print axioms SelfAttention.linearDominance_robust_concrete
 
 -- IntervalBounds (4)
 #print axioms IntervalBounds.Layer.sound

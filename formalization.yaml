@@ -177,6 +177,27 @@ status:
       tier: spec-rewrite
       sorry_count: 0
       axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.fixedPattern_robust_concrete"   # B1: concrete dot-product instance (+ ConcreteGlue token_l2_dev/clm_token_dev)
+      file: "SelfAttention/FixedPatternConcrete.lean"
+      source: "T2 (arXiv:2006.04710) — B1 concretization (REFERENCE-COMPARISON.md §6)"
+      grounds: "attention.fixed_pattern — hρ/hδV DERIVED from score_deviation_unit + W_V op-norm on dotProductAttn α W_V; only weights/unit-token/Vmax/margin survive as hyps"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.SelfAttention.linearDominance_robust_concrete"   # B1: concrete inner-product gate
+      file: "SelfAttention/LinearDominanceConcrete.lean"
+      source: "T2 (arXiv:2006.04710) — B1 concretization (REFERENCE-COMPARISON.md §6)"
+      grounds: "attention.linear_dominance — hw/hV DERIVED from inner_deviation_bound + Q/K/W_V op-norms on innerGate Q K W_V; only weights/gate-scale/Bmax/margin survive as hyps"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.LipschitzMargin.lipschitzWith_reluMap"   # B1.6: + reluLayer, dccnn_robust_concrete
+      file: "LipschitzMargin/DeepContractiveCNNConcrete.lean"
+      source: "T1' (arXiv:1802.04034) — B1 concretization (REFERENCE-COMPARISON.md §6)"
+      grounds: "cnn.deep_contractive_cnn — the AffLayer hact residue DISCHARGED: coordinatewise ReLU is LipschitzWith 1; reluLayer exhibits a concrete all-ReLU DCCNN layer"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
     - declaration: "VeriStressGT.IntervalBounds.ibp_network_sound"   # + netTrace_mem_netBoxes (every-stage)
       file: "IntervalBounds/Basic.lean"
       source: "T4 (arXiv:1810.12715)"
@@ -214,8 +235,8 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 62 audited declarations) + scripts/check.sh"
-    last_run: "2026-07-10"
+    method: "AxiomAudit.lean (#print axioms on all 73 audited declarations) + scripts/check.sh"
+    last_run: "2026-07-16"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
   review:
@@ -225,6 +246,7 @@ status:
       - "UCLA report (NON-LEAN, finding RESOLVED + SHARPENED): compute_L_attn uses n/4, paper eq.54 uses n/2 (= machine-checked Z_deviation_n2/fixedPattern_robust_derived); confirmed code-vs-paper bug, 2× unsafe. VERIFIED EXPOSED: all shipped fixed-pattern instances use margin_slack=1.05<2 → none satisfies the paper's own certificate (Prop.7) under the corrected constant. See FINDING-attn-Lattn-n4.md. Action: REPORT to UCLA (optionally PGD/complete-verifier-check one instance)."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
     closed_this_pass:
+      - "B1 CONCRETIZATION LAYER (2026-07-16, REFERENCE-COMPARISON.md §6): closes the one R1/R2 discipline gap the reference-comparison pass found — the attention/CNN certificates were proved over ABSTRACT blocks (FixedPatternAttn/GatedAttn/AffLayer), so the derivable deviation facts entered as hypotheses. Now three concrete instances construct the shipped maps and DERIVE those facts: (a) SelfAttention/FixedPatternConcrete.lean — dotProductAttn α W_V (score Sᵢⱼ=α⟪Xᵢ,Xⱼ⟫, value W_V Xⱼ); fixedPattern_robust_concrete discharges hρ (score_deviation_unit→score_row_deviation) and hδV (W_V op-norm), leaving only weights/unit-token/Vmax/margin. (b) SelfAttention/LinearDominanceConcrete.lean — innerGate Q K W_V (gate ⟪Q Xᵢ,K Xᵢ⟫); linearDominance_robust_concrete discharges hw (inner_deviation_bound) and hV, honest Δw=‖Q‖√dε(g+‖K‖√dε)+g‖K‖√dε ≤ code's 2ε(g+ε). (c) LipschitzMargin/DeepContractiveCNNConcrete.lean — reluMap proved LipschitzWith 1 (pointwise |max a 0−max b 0|≤|a−b| in ℓ²), reluLayer discharges AffLayer.hact. Shared L∞→ℓ² glue in SelfAttention/ConcreteGlue.lean (token_l2_dev: ‖ΔXᵢ‖₂≤√d·ε). +11 audited declarations (62→73); scripts/check.sh green."
       - "G1: fixed-pattern chain ASSEMBLED (Z_deviation/Z_deviation_n2) AND the full cert fixedPattern_robust_derived (step 1e, aggregate zflat + head + margin) — softmax construction fully certified from construction-level quantities, no assumed Lipschitz constant."
       - "G2 RESOLVED FROM SOURCES: read the VeriStressGT paper (eq.54 = n/2, from spectral ½) and Kim et al. (no n/4); the code's n/4 is a confirmed code-vs-paper bug (entrywise ¼ mis-substituted for spectral ½). Edge upgraded to kind: code-vs-paper-bug. FINDING-attn-Lattn-n4.md."
       - "G6 de-duplicated softmaxJac/sjJ (public in SoftmaxJacobianBound); G3–G5,G7,G9 reconciled."

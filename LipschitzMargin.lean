@@ -8,3 +8,4 @@ See `LipschitzMargin/README.md` and prose/lipschitz-margin-certificate.md.
 
 import LipschitzMargin.Basic
 import LipschitzMargin.DeepContractiveCNN
+import LipschitzMargin.DeepContractiveCNNConcrete

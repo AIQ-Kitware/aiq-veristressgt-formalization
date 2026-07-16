@@ -10,3 +10,6 @@ import SelfAttention.LinearDominance
 import SelfAttention.LinearDominanceBlock
 import SelfAttention.FixedPattern
 import SelfAttention.FixedPatternBlock
+import SelfAttention.ConcreteGlue
+import SelfAttention.FixedPatternConcrete
+import SelfAttention.LinearDominanceConcrete

@@ -13,7 +13,7 @@ certificate family, a paper-agnostic `ForMathlib` staging library, a
 > just the build + library map.
 
 > **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** Every substantive
-> theorem is proved; an independent `#print axioms` sweep over all **62 audited declarations**
+> theorem is proved; an independent `#print axioms` sweep over all **73 audited declarations**
 > ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
 > `{propext, Classical.choice, Quot.sound}`.
 >
@@ -143,20 +143,35 @@ Check a single file fast (no build lock): `lake env lean LipschitzMargin/Basic.l
 ## Next steps
 
 Both audit gaps (F2 including the softmax bound, and F4b) are landed; the DKPS-style comparator
-package now ships ([`Challenge/`](Challenge/README.md) — the softmax candidate: `def softmax` +
-`hasFDerivAt_softmax` + `lipschitzWith_softmax` + the Loewner Jacobian bounds); and the prior-art
-pass removed the one redundant local lemma in favour of Mathlib's `LipschitzWith.list_prod`
-(`netLipschitz` now calls it directly). The remaining work is non-Lean adjudication and outside
-review.
+package now ships ([`Challenge/`](Challenge/README.md)); the prior-art pass removed the one
+redundant local lemma in favour of Mathlib's `LipschitzWith.list_prod`; and **B1 — the
+concretization layer — is landed** (see below). The work now tracks the reference-comparison
+roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md) §6, B1–B6).
 
-1. **Adjudicate the `n/4` pooling (F2-C.3, edge `attn-Lattn-n4-pooling`):** locate the halving
-   argument in Kim et al. (arXiv:2006.04710) — if none exists, this is a confirmed Family-A
-   soundness bug in `compute_L_attn` (certified `L_attn` ~2× too small, unsafe direction).
-   `pooling_leading_coeff` records the honest `n/2`.
-2. **External review** of statement faithfulness to the PDFs — the concrete asks are in
-   [`AUDIT.md`](AUDIT.md) §5 step 7.
-3. **Optional (`float32-export`, R9):** adopt `girving/interval` if the float-soundness edge is
-   prioritized ([`EXTERNAL-LEAN-SURVEY.md`](EXTERNAL-LEAN-SURVEY.md) §A).
+- ✅ **B1 CONCRETIZATION (landed 2026-07-16).** The attention/CNN certificates were proved over
+  *abstract* blocks, so a handful of *derivable* deviation facts entered as hypotheses. Three
+  concrete instances now construct the shipped maps and **derive** those facts — closing the one
+  R1/R2 discipline gap the reference comparison flagged:
+  [`SelfAttention/FixedPatternConcrete.lean`](SelfAttention/FixedPatternConcrete.lean)
+  (`dotProductAttn`, `fixedPattern_robust_concrete`: `hρ`/`hδV` derived);
+  [`SelfAttention/LinearDominanceConcrete.lean`](SelfAttention/LinearDominanceConcrete.lean)
+  (`innerGate`, `linearDominance_robust_concrete`: `hw`/`hV` derived);
+  [`LipschitzMargin/DeepContractiveCNNConcrete.lean`](LipschitzMargin/DeepContractiveCNNConcrete.lean)
+  (`reluMap` proved `LipschitzWith 1`, `reluLayer` discharges `AffLayer.hact`); shared
+  L∞→ℓ² glue in [`SelfAttention/ConcreteGlue.lean`](SelfAttention/ConcreteGlue.lean).
+  The concrete end-states carry only weights + normalization + margin as hypotheses.
+
+Remaining reference-comparison items (B2–B6) and the standing non-Lean asks:
+
+1. **B2–B4 (reference-comparison §6):** Prop 6 pattern-stability as stated on the concrete
+   instance; tightness (`‖J‖₂ = ½`) as theorems; unify `IntervalBounds.Layer` with
+   `LipschitzMargin.AffLayer` to settle edge LM-4 (the `√d` ℓ∞-vs-ℓ² bookkeeping — a live
+   chance of a second code finding).
+2. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
+   argument in Kim et al. (arXiv:2006.04710); if none exists, `compute_L_attn` under-certifies
+   `L_attn` ~2× (unsafe). `Z_deviation_n2`/`pooling_leading_coeff` record the honest `n/2`.
+3. **External review** of statement faithfulness to the PDFs ([`AUDIT.md`](AUDIT.md) §5 step 7);
+   optional `float32-export` (R9) via `girving/interval`.
 
 Reproduce the verification story at any time with [`scripts/check.sh`](scripts/check.sh)
 (build + no-sorry + axiom audit).
