@@ -1,6 +1,15 @@
 # Finding: the DCCNN certificate applies a spectral (ℓ₂) Lipschitz constant to the L∞ box without the `√d` conversion
 
-**Status:** CONFIRMED code-level discrepancy · **Severity:** high (unsafe direction) ·
+> ⚠️ **SUPERSEDED — DO NOT SEND TO UCLA AS DRAFTED (AUDIT4.md §3, 2026-07-17).**
+> The exposure claim in §4 below is **refuted**: the shipped read-out row is uniform
+> `1/flat_dim`, so `‖w_out‖₂ = 1/√flat_dim` (= 1/32 at shipped configs), and the
+> all-ℓ₂ certificate `|Δg| ≤ ‖w_out‖₂·σλ^D·√d·ε` clears the shipped margin
+> `B = 1.1·cert_bound` by ≈ 8.8×. No shipped instance is exposed. What survives is a
+> norm-bookkeeping note (the formula is incoherent as written and unsafe for a
+> *non-uniform* read-out, `√d·‖w‖₂ > 2‖w‖₁`). Re-scope per AUDIT4 step N1 before any
+> external use. The Lean theorems cited below remain true and unaffected.
+
+**Status:** ~~CONFIRMED code-level discrepancy~~ **REFUTED as an exposure claim (AUDIT4 J1)** · **Severity:** ~~high (unsafe direction)~~ low (bookkeeping) ·
 **Edge:** `dccnn-linf-sqrtd-metric` · **Lean anchor:**
 `VeriStressGT.LipschitzMargin.dccnn_robust_linf_box`
 (`LipschitzMargin/DccnnLInfBox.lean`) · **Date:** 2026-07-16

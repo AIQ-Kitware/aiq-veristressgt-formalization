@@ -45,10 +45,12 @@ list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by 
    `Z_deviation_n2` use `n/2`. Code under-certifies `L_attn` ~2× (unsafe). Shipped fixed-pattern
    instances at `margin_slack = 1.05 < 2` are in the exposed regime.
    [`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md).
-2. **`dccnn-linf-sqrtd-metric`** — `deep_contractive_cnn.py:227` certifies on the L∞ box with a
-   spectral (ℓ²) constant and `cert_bound = L·2ε`, omitting the ℓ∞→ℓ² factor `√d`. Honest
-   threshold `L·√d·ε` (`dccnn_robust_linf_box`); unsafe for input dim `d > 4`.
-   [`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md).
+2. **`dccnn-linf-sqrtd-metric`** — ⚠️ **exposure claim REFUTED by AUDIT4 (2026-07-17, J1); do
+   not report as a soundness finding.** The shipped uniform read-out has `‖w_out‖₂ = 1/√flat_dim`,
+   and the all-ℓ₂ certificate clears the shipped margin ≈ 8.8×; no shipped instance is exposed.
+   Surviving content: a norm-bookkeeping note (formula incoherent as written; unsafe only for a
+   non-uniform read-out with `√d·‖w‖₂ > 2‖w‖₁`). See [`AUDIT4.md`](AUDIT4.md) §3 and step N1;
+   [`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md) carries the superseded banner.
 
 ## How to reproduce
 
