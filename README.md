@@ -1,202 +1,160 @@
 # AIQ VeriStressGT Formalization
 
-Lean 4 formalization of the theorems underlying the UCLA **VeriStressGT** (neural-network
-robustness-verification stress test) TA1 evaluation card. Structure mirrors the sibling
-[`aiq-dkps-formalization`](../aiq-dkps-formalization): one top-level Lean library per
-certificate family, a paper-agnostic `ForMathlib` staging library, a
-`formalization.yaml`, and prose transcriptions of every source under [`prose/`](prose/).
+Lean 4 formalization of the mathematics underlying the UCLA **VeriStressGT** TA1 evaluation
+card — a benchmark that ships neural-network robustness-verification instances that are
+*provably robust by construction* and measures whether a third-party verifier (α-β-CROWN)
+re-derives that verdict under a time budget.
 
-> 🧭 **New here — especially AI agents — start with [`AGENTS.md`](AGENTS.md).** It
-> codifies *why* this exists (formalizing MAGNET evaluation cards), the key structural
-> fact (VeriStressGT is a *certificate factory* — many small theorems, not one), the
-> published-theorem chain, the working conventions, and the known traps. This README is
-> just the build + library map.
+This repository proves the *ground-truth* half of that benchmark: for each way VeriStressGT
+constructs an instance, it states and machine-checks the robustness theorem the instance is
+built to satisfy — and, in the process, surfaces places where the shipped code departs from a
+sound certificate.
 
-> **Status: proved & axiom-clean — `lake build` green, ZERO `sorry`.** Every substantive
-> theorem is proved; an independent `#print axioms` sweep over all **82 audited declarations**
-> ([`AxiomAudit.lean`](AxiomAudit.lean) / [`scripts/check.sh`](scripts/check.sh)) shows only
-> `{propext, Classical.choice, Quot.sound}`.
->
-> **What "proved" means here (scope, read before citing):** what is machine-checked is the
-> *published certificate theorems* — the T1–T6 templates each construction instantiates, plus,
-> for some constructions, the derivation of the sensitivity constant from construction-level
-> quantities (see the per-construction status below). This is **not** a proof that each *shipped*
-> instance is certifiably robust; on the contrary, the exercise surfaced two machine-checked ways
-> the shipped pipeline departs from a sound certificate (the two findings below). Concretely:
-> `linearDominance_robust_derived` closes the ideal certificate for the linear construction with
-> no assumed constant; the CNN certificate (`dccnn_robust_via_net_upper`) is proved for the ideal
-> `L` *modulo an explicit upper-bound hypothesis* the shipped power-iteration `L̂` does not meet
-> (edge `dccnn-L-power-iter`); the fixed-pattern chain is assembled with the per-token weights the
-> one remaining seam.
->
-> Both audit gaps (F2, F4b) are **fully closed** in Lean — for **both** attention constructions
-> and including the softmax `LipschitzWith ½` bound (F2-B). Not all theorems are equal weight —
-> see the three-tier breakdown in [`AUDIT.md`](AUDIT.md) §3. The flagship
-> `ForMathlib.softmax_jacobian_opNorm_le_half` (`‖diag a − aaᵀ‖₂ ≤ ½`, tight) is proved via the
-> self-adjoint operator-norm = sup-Rayleigh route. **Single source of truth for status:
-> [`formalization.yaml`](formalization.yaml)** (`review:` section) with a dated,
-> evidence-scoped [`STATUS.md`](STATUS.md) (what was checked, at which commit, by which
-> command); this block summarizes them.
->
-> Three review passes are folded in — [`AUDIT.md`](AUDIT.md) (F1–F11),
-> [`GUIDANCE-F2-F4b.md`](GUIDANCE-F2-F4b.md), and [`AUDIT2.md`](AUDIT2.md) (G1–G9):
-> - **F4b CLOSED** — the whole-network big-M encoding is wired to IBP box validity
->   ([`ExactMILP/Network.lean`](ExactMILP/Network.lean): `advSet`, `bigMReach_sound`/`_complete`,
->   `bigM_feasible_iff_netEval`; [`IntervalBounds`](IntervalBounds/Basic.lean) `netTrace_mem_netBoxes`).
-> - **F2-B CLOSED (unconditional)** — [`SoftmaxLipschitz.lean`](ForMathlib/Analysis/SoftmaxLipschitz.lean)
->   proves the softmax Fréchet derivative on `EuclideanSpace` (`hasFDerivAt_softmax`) and concludes
->   `lipschitzWith_softmax : LipschitzWith ½ softmax` — the completed consumer of the Jacobian
->   bound and the ForMathlib upstream candidate (½ tight, arXiv:2510.23012; no Lean source existed
->   to reuse, [`EXTERNAL-LEAN-SURVEY.md`](EXTERNAL-LEAN-SURVEY.md)).
-> - **F2 CLOSED for the linear construction** — `linearDominance_robust_derived` derives the
->   certificate from per-token deviations, no assumed Lipschitz constant
->   ([`LinearDominanceBlock.lean`](SelfAttention/LinearDominanceBlock.lean)).
-> - **F2 fixed-pattern chain ASSEMBLED** (AUDIT2 G1) — [`FixedPatternBlock.lean`](SelfAttention/FixedPatternBlock.lean)
->   `Z_deviation`/`Z_deviation_n2` derive `‖ΔZᵢ‖ ≤ (n/2)·B_S·ε·(Vmax+δV) + δV`, consuming
->   `lipschitzWith_softmax` and Mathlib's Chebyshev pooling lemma. Its **leading coefficient `n/2`
->   is now a machine-checked derivation** — the real Lean anchor for edge `attn-Lattn-n4-pooling`.
->
-> **Headline finding — a confirmed soundness bug ([`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md)).**
-> Reading the primary sources settled the `n/4` question: the VeriStressGT **paper**
-> (arXiv:2605.17153 §A.6 eq. 54) uses **`n/2`** (from the spectral `‖∇softmax‖_op ≤ ½`), matching
-> our machine-checked `Z_deviation_n2`; the shipped **code** `compute_L_attn` uses **`n/4`** (the
-> *entrywise* Jacobian max `¼` mis-substituted for the spectral norm). The code under-certifies
-> `L_attn` by 2× vs its own paper — the **unsafe** direction (risk of false-UNSAT ground-truth
-> labels). This is exactly the class of defect the edges program exists to catch, now backed by a
-> machine-checked bound rather than prose.
->
-> **Second finding — the shipped fixed-pattern instances are in the *exposed* regime (AUDIT3 H1).**
-> Every shipped fixed-pattern configuration sets `margin_slack = 1.05 < 2`, so under the paper's
-> own (corrected) constant *none* of them satisfies the certificate condition (Prop. 7): as
-> configured, their "robust/UNSAT" ground-truth labels are **not** established by the paper's
-> theorem. Together with the `n/4` bug, this is why the status above is careful to say the
-> formalization certifies the *published theorems*, not the shipped instances.
->
-> *(Flagship packaging, AUDIT2 G8 + AUDIT3 H7: the Mathlib-preferred **Loewner** statements
-> `softmaxJac_posSemidef` (`0 ≤ J`) and `two_smul_softmaxJac_le_one` (`2•J ≤ 1`) are added — the `½`
-> operator-norm form stays the Rayleigh proof because Mathlib's C\*-algebra order↔norm bridge is
-> ℂ-only (`Matrix n n ℝ` is not a `CStarAlgebra`, verified). The softmax package is bundled as a
-> DKPS-style comparator candidate in [`Challenge/`](Challenge/README.md) —
-> `def softmax` + `hasFDerivAt_softmax` + `lipschitzWith_softmax` + the Loewner Jacobian bounds,
-> none of which exists in any Lean source.)*
+> **Orientation:** start with [`AGENTS.md`](AGENTS.md) (why this exists, the key structural
+> facts, the working conventions, and the known traps). For a dated, evidence-scoped account
+> of what was checked, at which commit, by which command, read [`STATUS.md`](STATUS.md). The
+> machine-readable per-declaration status is [`formalization.yaml`](formalization.yaml). Do
+> not infer current status from older audit notes.
 
-## What VeriStressGT claims
+## What is being proven
 
-Every generated instance is **UNSAT (provably robust) by construction**: each
-construction instantiates a published robustness theorem so that
-`margin(x₀) > (Lipschitz/sensitivity constant) · ε ⟹ no adversarial example in the L∞
-ε-box`. The instance is exported as an `(ONNX, VNN-LIB)` pair, and the card
-(`../../ta1/VeriStressGT/cards/evaluation.yaml`) asks the verifier **α-β-CROWN** to
-re-derive the UNSAT verdict on **≥ 60%** of instances within a **60 s** timeout. So the
-*ground-truth certificate* is a theorem; the *card claim* is an empirical verifier stress
-test. See [`AGENTS.md`](AGENTS.md) §3 and [`prose/README.md`](prose/README.md) for the
-full published-theorem chain.
+VeriStressGT is a **certificate factory**: instead of one headline theorem, it has *many
+small, independent robustness certificates*, one per construction, each of the shape
+
+> **certified margin at `x₀`  >  (a sensitivity constant) × (perturbation `ε`)  ⟹  no
+> adversarial example in the `L∞` `ε`-box  ⟹  the verification query is UNSAT.**
+
+Each construction picks network weights that make the inequality hold by construction. This
+repo formalizes those certificates. In plain terms, the machine-checked results say:
+
+- **Deep contractive CNNs.** If a network's margin at `x₀` beats its Lipschitz constant times
+  the box radius, no input in the box flips the prediction — with the Lipschitz constant
+  derived as the product of the layers' spectral norms, and coordinatewise ReLU proved
+  `1`-Lipschitz.
+- **Self-attention (two constructions).** The output of a softmax/linear attention block
+  moves by a controlled amount over the box; in particular the softmax attention *pattern*
+  (which key each query attends to) stays fixed across the whole box when the score gap is
+  large enough, and the linear-dominance output stays close to its dominant value.
+- **The softmax sensitivity itself.** Softmax is exactly `½`-Lipschitz in the Euclidean norm
+  — proved, and proved *tight* (a witness attains it), via the spectral bound on its
+  Jacobian `diag(a) − aaᵀ`.
+- **Exact-MILP radius.** The big-M ReLU encoding faithfully represents the network, so an
+  optimal MILP solution gives a sound robustness radius / label.
+- **Interval bound propagation.** Propagating a box through the network soundly contains the
+  true output — the every-stage version that the MILP encoding needs.
+- **Polynomial networks.** A certified distance to the algebraic decision boundary implies
+  robustness within that distance.
+- **The verifier interface.** A soundness/completeness *specification* for the CROWN-style
+  verifier the card ultimately stands on, making the card-level assumptions explicit.
+
+A crosswalk from each construction to its published source theorem and its Lean declarations
+is in [`theorem-map.md`](theorem-map.md); faithful transcriptions of every source argument
+are under [`prose/`](prose/).
+
+### What "proved" means here (scope)
+
+What is machine-checked is the **certificate theorems** and the derivation of their sensitivity
+constants from construction-level quantities (weights, token normalization, the margin) — all
+with **zero `sorry`** and depending only on the three standard axioms
+(`propext`, `Classical.choice`, `Quot.sound`). Lean is the *oracle for the mathematics*: it
+establishes, beyond doubt, what the correct constants and thresholds are.
+
+Lean does **not** read or run the shipped Python / ONNX artifacts, and there is no automated
+"the code matches the theorem" check. The correspondence between code and theorem is drawn by
+hand — transcribed in `prose/` and recorded as explicit **assumption → relaxation edges** (see
+[`ucla-formalization-edges.md`](ucla-formalization-edges.md)). Where the code and the theorem
+disagree, that is a *finding*: the machine-checked theorem supplies the authoritative value,
+and reading the code shows it computes something else.
+
+## Status
+
+`lake build` is **green**; **zero `sorry`** in the production tree; an independent
+`#print axioms` sweep over all **82 audited declarations** ([`AxiomAudit.lean`](AxiomAudit.lean),
+driven by [`scripts/check.sh`](scripts/check.sh)) shows only `{propext, Classical.choice,
+Quot.sound}`. The reproducible gate is a single command:
+
+```bash
+bash scripts/check.sh      # lake build + no-sorry scan + axiom audit; exit 0 = green
+```
+
+The current dated verification record — commit, toolchain, and per-stage results — is
+[`STATUS.md`](STATUS.md). The comparison against the sibling DKPS/DRSB formalizations, and the
+development roadmap it drove (all landed), is in `../REFERENCE-COMPARISON.md`.
+
+## Findings
+
+Formalizing the ground truth surfaced two machine-checked ways the shipped pipeline departs
+from a sound certificate — both in the *unsafe* direction (a smaller certified constant can
+ship a mislabeled "robust" instance). Full substantiation is in the linked write-ups.
+
+1. **Self-attention `L_attn` under-counts the softmax pooling by 2×.**
+   [`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md). The shipped `compute_L_attn` uses a
+   coefficient `n/4`, where both the source paper and a machine-checked derivation
+   (`FixedPatternAttn.Z_deviation_n2`) give `n/2` — the *entrywise* softmax-Jacobian bound
+   (`¼`) mis-substituted for the *spectral* one (`½`). The shipped instances set their margin
+   slack too small to absorb the 2× gap, so their "robust" labels are unproven by the
+   construction's own theorem as shipped.
+
+2. **The DCCNN certificate omits the `ℓ∞→ℓ₂` dimension factor `√d`.**
+   [`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md). The certificate multiplies a
+   *spectral (ℓ₂)* Lipschitz constant by `2ε` over the `L∞` verification box, with no `√d`.
+   The honest threshold is `L·√d·ε` (machine-checked `dccnn_robust_linf_box`); for the shipped
+   `8×8` inputs (`d = 64`, `√d = 8`) that is `4×` larger than the code's `2ε`, and the margin
+   cushion is ~`3.6×` short on every shipped instance.
+
+Both are documented as edges in [`formalization.yaml`](formalization.yaml) /
+[`ucla-formalization-edges.md`](ucla-formalization-edges.md). Each finding is stated carefully:
+the certificate is *unproven as shipped* (the Lipschitz bound is sufficient, not necessary), so
+an empirical check (PGD or a complete verifier at a box corner) is what would tell whether any
+individual label is actually false.
 
 ## Libraries
 
-| Library | Role | Key declarations |
-|---|---|---|
-| `ForMathlib` | Paper-agnostic staging: operator-norm Lipschitz, softmax-Jacobian bound, IBP steps | `lipschitz_affine_of_opNorm`, `softmax_jacobian_opNorm_le_half`, `ibp_affine_sound`, `ibp_relu_sound` |
-| `LipschitzMargin` | T1/T1′ — scalar Lipschitz-margin certificate + spectral-norm composition | `robust_of_margin_gt`, `argmax_stable_of_margin_gt`, `dccnn_robust_of_true_L`, `dccnn_robust_of_upper_bound` |
-| `SelfAttention` | T2 — attention `L_attn` sensitivity | `linearDominance_token_bound`, `linearDominance_robust`, `gap_implies_stability_margin`, `fixedPattern_robust` |
-| `IntervalBounds` | T4 — interval bound propagation soundness | `Layer`, `netEval`, `netProp`, `ibp_network_sound`, `robust_of_ibp_lower_pos` |
-| `ExactMILP` | T3 — big-M ReLU encoding faithfulness + label soundness | `bigM_relu_faithful`, `label_sound_of_optimal` |
-| `AlgebraicBoundary` | T6 — distance-to-the-algebraic-boundary certificate | `robust_of_lt_dist_boundary`, `robust_of_numerical_lower_bound` |
-| `Verifier` | T5 — CROWN/β-CROWN sound/complete *specification* the card stands on | `VerifierSpec`, `Sound`, `CompleteInLimit`, `sound_unsat_robust` |
+Each top-level library is one certificate family; every declaration's docstring cites its
+prose source, and each library's `README.md` gives the construction crosswalk.
 
-There is **no single capstone** (unlike DKPS/DRSB): VeriStressGT is many independent
-per-construction certificates. Each `<Library>/Basic.lean` docstring cites the prose file
-+ printed theorem number every declaration corresponds to; each library's `README.md`
-gives its construction crosswalk.
+| Library | What it proves |
+|---|---|
+| `ForMathlib` | Reusable, source-agnostic pieces: operator-norm = Lipschitz constant, the softmax-Jacobian spectral bound and its tightness, interval-arithmetic soundness steps. |
+| `LipschitzMargin` | The Lipschitz-margin robustness certificate, the spectral-norm composition for deep CNNs (with a concrete ReLU layer), and the honest `L∞`-box threshold with the `√d` factor. |
+| `SelfAttention` | Self-attention sensitivity: concrete softmax (fixed-pattern) and linear-dominance blocks, the derived output-deviation bounds, softmax pattern-stability over the box, and the dominant-key bound. |
+| `IntervalBounds` | Interval bound propagation soundness, whole-network and every-stage. |
+| `ExactMILP` | Faithfulness of the big-M ReLU MILP encoding and soundness of the resulting label / radius. |
+| `AlgebraicBoundary` | Distance-to-the-algebraic-boundary robustness for polynomial networks. |
+| `Verifier` | The verifier soundness / completeness specification the card stands on. |
+| `Challenge` / `comparator` | A Mathlib-candidate comparator package for the softmax result (definition, derivative, tight `½`-Lipschitz, Loewner Jacobian bounds); see [`Challenge/README.md`](Challenge/README.md). Not a default build target. |
+
+## Build
+
+Toolchain `leanprover/lean4:v4.31.0-rc2`; Mathlib pinned in `lake-manifest.json`.
+
+```bash
+bash setup_lean.sh      # elan + the pinned toolchain
+lake exe cache get      # prebuilt Mathlib oleans (or reuse a sibling build)
+lake build              # green: zero `sorry`
+```
+
+Check a single file fast (no build lock): `lake env lean LipschitzMargin/Basic.lean`. Reproduce
+the whole verification story with [`scripts/check.sh`](scripts/check.sh).
 
 ## Layout
 
 ```text
 .
-├── ForMathlib.lean / ForMathlib/     # DV-free reusable results (import: Mathlib only)
-├── <Library>.lean / <Library>/       # one library per certificate family (import: Mathlib + ForMathlib)
-├── Challenge/ + comparator/          # Mathlib-candidate comparator package (softmax) — see Challenge/README.md
-├── prose/                            # faithful transcriptions of every source theorem
-├── papers/                           # fetch script + manifest (PDFs git-ignored)
-├── theorem-map.md                    # published-theorem ⟷ construction crosswalk
-├── ucla-formalization-edges.md       # assumption→relaxation edges + power-iteration Appendix A
-├── formalization.yaml                # project metadata (sources, targets, status, edges)
+├── AGENTS.md                       # start here: purpose, structure, conventions, traps
+├── STATUS.md                       # dated, evidence-scoped verification record
+├── FINDING-*.md                    # substantiated write-ups of the two findings
+├── ForMathlib.lean / ForMathlib/   # reusable results (imports: Mathlib only)
+├── <Library>.lean / <Library>/     # one library per certificate family
+├── Challenge/ + comparator/        # Mathlib-candidate comparator package (softmax)
+├── prose/                          # faithful transcriptions of every source argument
+├── theorem-map.md                  # construction ⟷ source-theorem ⟷ Lean crosswalk
+├── ucla-formalization-edges.md     # assumption → relaxation edges to the empirical repo
+├── formalization.yaml              # machine-readable metadata, targets, status, edges
+├── AxiomAudit.lean / scripts/check.sh   # the reproducible verification gate
 └── lakefile.toml / lake-manifest.json / lean-toolchain / setup_lean.sh
 ```
 
-The planning products (`theorem-map.md`, `ucla-formalization-edges.md`, `prose/`) are the
-pre-Lean layer: they identify the published theorems, transcribe their core argument
-chains, and draw the edges to the empirical repo `../../ta1/VeriStressGT/`.
-
-## Build
-
-Toolchain `leanprover/lean4:v4.31.0-rc2`; Mathlib pinned in `lake-manifest.json` (same
-rev as the DKPS repo — this repo's `.lake/packages` may be symlinked to it to reuse the
-build).
-
-```bash
-bash setup_lean.sh      # elan + the pinned toolchain
-lake exe cache get      # download prebuilt Mathlib oleans (or reuse the sibling build)
-lake build              # builds green (zero `sorry`; see scripts/check.sh)
-```
-
-Check a single file fast (no build lock): `lake env lean LipschitzMargin/Basic.lean`.
-
-## Next steps
-
-Both audit gaps (F2 including the softmax bound, and F4b) are landed; the DKPS-style comparator
-package now ships ([`Challenge/`](Challenge/README.md)); the prior-art pass removed the one
-redundant local lemma in favour of Mathlib's `LipschitzWith.list_prod`; and **B1 — the
-concretization layer — is landed** (see below). The work now tracks the reference-comparison
-roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md) §6, B1–B6).
-
-- ✅ **B1 CONCRETIZATION (landed 2026-07-16).** The attention/CNN certificates were proved over
-  *abstract* blocks, so a handful of *derivable* deviation facts entered as hypotheses. Three
-  concrete instances now construct the shipped maps and **derive** those facts — closing the one
-  R1/R2 discipline gap the reference comparison flagged:
-  [`SelfAttention/FixedPatternConcrete.lean`](SelfAttention/FixedPatternConcrete.lean)
-  (`dotProductAttn`, `fixedPattern_robust_concrete`: `hρ`/`hδV` derived);
-  [`SelfAttention/LinearDominanceConcrete.lean`](SelfAttention/LinearDominanceConcrete.lean)
-  (`innerGate`, `linearDominance_robust_concrete`: `hw`/`hV` derived);
-  [`LipschitzMargin/DeepContractiveCNNConcrete.lean`](LipschitzMargin/DeepContractiveCNNConcrete.lean)
-  (`reluMap` proved `LipschitzWith 1`, `reluLayer` discharges `AffLayer.hact`); shared
-  L∞→ℓ² glue in [`SelfAttention/ConcreteGlue.lean`](SelfAttention/ConcreteGlue.lean).
-  The concrete end-states carry only weights + normalization + margin as hypotheses.
-- ✅ **B3 TIGHTNESS (landed 2026-07-16).** The softmax `½` bounds, previously tight in
-  docstrings only, are now theorems in
-  [`ForMathlib/Analysis/SoftmaxTight.lean`](ForMathlib/Analysis/SoftmaxTight.lean):
-  `softmaxJac_opNorm_eq_half_witness` (`‖J(½,½)‖₂ = ½`, via the `(1,−1)` eigenvector) and
-  `lipschitzWith_softmax_optimal` (no `K < ½` is a Lipschitz constant) — sharpness that
-  strengthens the softmax Mathlib candidate.
-- ✅ **B4 + SECOND FINDING (landed 2026-07-16).**
-  [`LipschitzMargin/DccnnLInfBox.lean`](LipschitzMargin/DccnnLInfBox.lean) unifies the two
-  network models (`Layer.toAffLayer_eval`: the IBP `IntervalBounds.Layer` and the T1′
-  `AffLayer` compute the same map) and settles **edge LM-4** — which surfaced a **second
-  confirmed code finding** ([`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md)):
-  `cnn.deep_contractive_cnn` applies a *spectral (ℓ²)* Lipschitz constant to the *L∞* VNN-LIB
-  box using `cert_bound = L·2ε` with **no `√d`**. The honest threshold is `L·√d·ε`
-  (`dccnn_robust_linf_box`); for input dimension `d > 4` the code under-certifies the
-  perturbation — the **unsafe** direction, structurally identical to the `n/4` finding.
-- ✅ **B2 PATTERN STABILITY (landed 2026-07-16).**
-  [`SelfAttention/FixedPatternStable.lean`](SelfAttention/FixedPatternStable.lean) proves the
-  paper's Prop 6 on the concrete instance (`dotProductAttn_pattern_stable`): if the nominal
-  score gap to `π*` exceeds `2·B_S·ε` for every competitor, `π*` is the **strict argmax of the
-  score row for every `X` in the L∞ box** — the genuine "attention pattern constant on the
-  box" statement, retiring the `PatternFixed` proxy caveat (edge `attn-fixed-pattern-gap`).
-
-**The full B1–B6 reference-comparison roadmap ([`../REFERENCE-COMPARISON.md`](../REFERENCE-COMPARISON.md)
-§6) is landed** — B5 added a dated, evidence-scoped [`STATUS.md`](STATUS.md), and B6's paper
-Lemma 8 dominant-key bound (`attn_dominant_key_bound`) makes the linear-dominance thread
-paper-complete. The remaining optional-depth items (heterogeneous-width `Layer`, the sharper
-`O(√(N log N))` softmax-row bound) and the standing non-Lean asks:
-
-1. **Adjudicate the `n/4` pooling (edge `attn-Lattn-n4-pooling`):** locate the halving
-   argument in Kim et al. (arXiv:2006.04710); if none exists, `compute_L_attn` under-certifies
-   `L_attn` ~2× (unsafe). `Z_deviation_n2`/`pooling_leading_coeff` record the honest `n/2`.
-2. **Report the two confirmed findings to UCLA** (`attn-Lattn-n4`, `dccnn-linf-sqrtd-metric`),
-   optionally PGD/complete-verifier-checking one shipped instance each.
-3. **External review** of statement faithfulness to the PDFs ([`AUDIT.md`](AUDIT.md) §5 step 7);
-   optional `float32-export` (R9) via `girving/interval`.
-
-Reproduce the verification story at any time with [`scripts/check.sh`](scripts/check.sh)
-(build + no-sorry + axiom audit).
+The pre-Lean layer (`theorem-map.md`, `ucla-formalization-edges.md`, `prose/`) identifies the
+source theorems, transcribes their arguments, and draws the edges to the empirical repository
+`../../ta1/VeriStressGT/`.
