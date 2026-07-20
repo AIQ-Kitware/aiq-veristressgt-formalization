@@ -69,7 +69,7 @@ and reading the code shows it computes something else.
 ## Status
 
 `lake build` is **green**; **zero `sorry`** in the production tree; an independent
-`#print axioms` sweep over all **82 audited declarations** ([`AxiomAudit.lean`](AxiomAudit.lean),
+`#print axioms` sweep over all **94 audited declarations** ([`AxiomAudit.lean`](AxiomAudit.lean),
 driven by [`scripts/check.sh`](scripts/check.sh)) shows only `{propext, Classical.choice,
 Quot.sound}`. The reproducible gate is a single command:
 
@@ -83,30 +83,36 @@ development roadmap it drove (all landed), is in `../REFERENCE-COMPARISON.md`.
 
 ## Findings
 
-Formalizing the ground truth surfaced two machine-checked ways the shipped pipeline departs
-from a sound certificate — both in the *unsafe* direction (a smaller certified constant can
-ship a mislabeled "robust" instance). Full substantiation is in the linked write-ups.
+Formalizing the ground truth produced **one confirmed soundness finding** on the shipped
+pipeline, plus one candidate that the same machinery later **refuted** — both are recorded, the
+refutation included, because the corrected mathematics is itself the point of the method.
 
-1. **Self-attention `L_attn` under-counts the softmax pooling by 2×.**
+1. **Confirmed — self-attention `L_attn` under-counts the softmax pooling by 2×.**
    [`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md). The shipped `compute_L_attn` uses a
    coefficient `n/4`, where both the source paper and a machine-checked derivation
    (`FixedPatternAttn.Z_deviation_n2`) give `n/2` — the *entrywise* softmax-Jacobian bound
    (`¼`) mis-substituted for the *spectral* one (`½`). The shipped instances set their margin
    slack too small to absorb the 2× gap, so their "robust" labels are unproven by the
-   construction's own theorem as shipped.
+   construction's own theorem as shipped. In the *unsafe* direction (a smaller certified
+   constant can ship a mislabeled instance).
 
-2. **The DCCNN certificate omits the `ℓ∞→ℓ₂` dimension factor `√d`.**
-   [`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md). The certificate multiplies a
-   *spectral (ℓ₂)* Lipschitz constant by `2ε` over the `L∞` verification box, with no `√d`.
-   The honest threshold is `L·√d·ε` (machine-checked `dccnn_robust_linf_box`); for the shipped
-   `8×8` inputs (`d = 64`, `√d = 8`) that is `4×` larger than the code's `2ε`, and the margin
-   cushion is ~`3.6×` short on every shipped instance.
+2. **Refuted — the DCCNN `√d` metric point is a bookkeeping note, not an exposure.**
+   [`FINDING-dccnn-linf-sqrtd.md`](FINDING-dccnn-linf-sqrtd.md). A draft claimed the DCCNN
+   certificate under-certifies the `L∞` box by omitting the `ℓ∞→ℓ₂` factor `√d`. An audit
+   caught the error and it is now machine-checked
+   ([`DccnnReadout.lean`](LipschitzMargin/DccnnReadout.lean)): the shipped read-out row is
+   *uniform*, so its ℓ₂ operator norm `‖w‖₂ = 1/√flat_dim` is far below the ℓ₁ value the draft
+   used, and the all-ℓ₂ certificate clears the shipped margin by ≈ 8.8×. **No shipped instance
+   is exposed.** What survives is a latent robustness-of-process note (the formula would be
+   unsafe for a *non-uniform* read-out).
 
 Both are documented as edges in [`formalization.yaml`](formalization.yaml) /
-[`ucla-formalization-edges.md`](ucla-formalization-edges.md). Each finding is stated carefully:
+[`ucla-formalization-edges.md`](ucla-formalization-edges.md). Finding 1 is stated carefully —
 the certificate is *unproven as shipped* (the Lipschitz bound is sufficient, not necessary), so
 an empirical check (PGD or a complete verifier at a box corner) is what would tell whether any
-individual label is actually false.
+individual label is actually false. The separate, still-open `dccnn-L-power-iter` edge (the
+reshaped-kernel spectral norm is not the true convolution operator norm) is the strongest
+remaining DCCNN concern.
 
 ## Libraries
 

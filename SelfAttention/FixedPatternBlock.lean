@@ -312,7 +312,8 @@ noncomputable def FixedPatternAttn.margin (A : FixedPatternAttn n d dv) {c : ℕ
   (Whead (A.zflat X) + bhead) y - (Whead (A.zflat X) + bhead) k
 
 /-- The per-token output-deviation budget `K = √m·(½ρ)·(Vmax+δV) + δV` (from `Z_deviation`,
-`m` = number of tokens) — the Lean form of the paper's per-token `L_attn·ε` budget.  Public
+`m` = number of keys aggregated in the row's ℓ¹→ℓ² pooling; `= n` here) — the Lean form of
+the paper's per-token `L_attn·ε` budget.  Public
 so downstream files can spell the bound in `margin_deviation`/`fixedPattern_robust_derived`
 (audit AUDIT3 H4). -/
 noncomputable def fpK (m : ℕ) (ρ δV Vmax : ℝ) : ℝ :=

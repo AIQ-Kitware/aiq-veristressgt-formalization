@@ -3,23 +3,25 @@ LipschitzMargin.DccnnLInfBox — the honest L∞-box Lipschitz-margin certificat
 `√d` dimension factor made explicit (bridging step B4, REFERENCE-COMPARISON.md §6), and the
 single-layer bridge unifying `IntervalBounds.Layer` with `LipschitzMargin.AffLayer`.
 
-**The LM-4 seam (edge `dccnn-linf-sqrtd-metric`).**  The DCCNN Lipschitz constant
-`L = σ_proj·λ^D·‖w_out‖` is a *spectral* (ℓ²→ℓ²) operator-norm chain (power iteration =
-largest singular value; `netLipschitz`).  But the VNN-LIB query is an **L∞** box: every
-input coordinate ranges independently over `[x₀ᵢ − ε, x₀ᵢ + ε]` (`_write_vnnlib`,
-`deep_contractive_cnn.py:390-397`).  An adversary can push *all* `d` coordinates to the
-corner, so the honest ℓ² perturbation radius is `‖x − x₀‖₂ = √d·ε`, and the correct
-robustness threshold for an ℓ²-Lipschitz margin is
+**The LM-4 seam (edge `dccnn-linf-sqrtd-metric`, NOT-EXPOSED-AS-SHIPPED).**  The DCCNN
+conv/proj Lipschitz constants are *spectral* (ℓ²→ℓ²) operator norms (power iteration =
+largest singular value; `netLipschitz`).  The VNN-LIB query is an **L∞** box: every input
+coordinate ranges independently over `[x₀ᵢ − ε, x₀ᵢ + ε]` (`_write_vnnlib`,
+`deep_contractive_cnn.py:390-397`), so the ℓ² perturbation radius at a corner is
+`‖x − x₀‖₂ = √d·ε`, and the correct robustness threshold for an ℓ²-Lipschitz margin `g` of
+Lipschitz constant `L` is `g(x₀) > L·√d·ε` — this file's `dccnn_robust_linf_box`, with the
+`√d` explicit (`dist_le_sqrt_dim_mul_linf`).
 
-    g(x₀) > L·√d·ε.
-
-The shipped `cert_bound = σ_proj·λ^D·2ε·‖w_out‖₁` (`deep_contractive_cnn.py:227`) uses `L·2ε`
-with **no `√d`** — the `2` is an ℓ∞ *diameter* convention, not the ℓ∞→ℓ² conversion.  For
-input dimension `d > 4` the honest `√d·ε` exceeds `2ε`, so the code *under*-certifies the
-perturbation (margin `B` set too small) — the **unsafe** direction, a candidate false-UNSAT.
-See `FINDING-dccnn-linf-sqrtd.md`.  `dccnn_robust_linf_box` is the machine-checked anchor:
-the `√d` is a *derived* quantity, exactly as `Z_deviation_n2`'s `n/2` anchors the
-`attn-Lattn-n4-pooling` finding.
+**Scope note (AUDIT4 J1, 2026-07-17).**  An earlier reading treated the shipped
+`cert_bound = σ_proj·λ^D·2ε·‖w_out‖₁` as under-certifying the box by `√d/2`.  That was a
+mistake: the correct ℓ² Lipschitz constant of the margin uses the read-out's *ℓ² operator
+norm* `‖w_out‖₂`, and for the shipped **uniform** read-out `‖w_out‖₂ = 1/√flat_dim ≪ ‖w_out‖₁`,
+so the all-ℓ² certificate clears the shipped margin (≈ 8.8× at shipped configs).  **No shipped
+instance is exposed** — the corrected, machine-checked account is in
+[`DccnnReadout.lean`](DccnnReadout.lean) (`dccnn_readout_robust`,
+`uniform_readout_code_bound_dominates`) and `FINDING-dccnn-linf-sqrtd.md`.  The theorems in
+this file are the honest certificate and were always correct; they are the generic building
+block the corrected account instantiates with the true operator norm.
 
 The single-layer bridge `Layer.toAffLayer_eval` shows the concrete `IntervalBounds.Layer`
 (which drives IBP/MILP on `Fin n → ℝ` with the sup metric) and the abstract `AffLayer`
@@ -110,5 +112,37 @@ theorem Layer.toAffLayer_eval {n : ℕ} (L : IntervalBounds.Layer n) (x : Fin n 
     simp only [Layer.toAffLayer, AffLayer.map, IntervalBounds.Layer.eval, add_zero,
       ContinuousLinearMap.id_apply, reluMap_apply]
     exact max_comm _ _
+
+/-! ### List-level model bridge (AUDIT4 step N4, closes J3) -/
+
+/-- `netMap` of a list with a layer appended is the composition with that layer's map on the
+right (`netMap` applies the list head *last*).  The orientation fact behind the reversal in
+`netMap_reverse_toAffLayer_eval`. -/
+theorem netMap_append_singleton {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (Ls : List (AffLayer E)) (L : AffLayer E) :
+    netMap (Ls ++ [L]) = netMap Ls ∘ L.map := by
+  induction Ls with
+  | nil => funext x; rfl
+  | cons a as ih =>
+    show a.map ∘ netMap (as ++ [L]) = (a.map ∘ netMap as) ∘ L.map
+    rw [ih, Function.comp_assoc]
+
+/-- **The two network models compute the same *network* (AUDIT4 J3).**  `netEval` applies the
+list head *first* while `netMap` applies it *last*, so the abstract `AffLayer` network over the
+**reversed** mapped list agrees, coordinatewise via `toLp`, with the concrete
+`IntervalBounds.netEval` — the list-level lift of `Layer.toAffLayer_eval`. -/
+theorem netMap_reverse_toAffLayer_eval {n : ℕ} (net : List (IntervalBounds.Layer n))
+    (x : Fin n → ℝ) :
+    ofLp (netMap ((net.map Layer.toAffLayer).reverse) (toLp 2 x)) = IntervalBounds.netEval net x := by
+  induction net generalizing x with
+  | nil => rfl
+  | cons L rest ih =>
+    rw [List.map_cons, List.reverse_cons, netMap_append_singleton]
+    show ofLp (netMap ((rest.map Layer.toAffLayer).reverse) ((Layer.toAffLayer L).map (toLp 2 x)))
+      = IntervalBounds.netEval rest (L.eval x)
+    have hmap : (Layer.toAffLayer L).map (toLp 2 x) = toLp 2 (L.eval x) := by
+      rw [← Layer.toAffLayer_eval L x, WithLp.toLp_ofLp]
+    rw [hmap]
+    exact ih (L.eval x)
 
 end VeriStressGT.LipschitzMargin

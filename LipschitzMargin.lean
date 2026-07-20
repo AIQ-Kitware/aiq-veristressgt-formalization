@@ -10,3 +10,4 @@ import LipschitzMargin.Basic
 import LipschitzMargin.DeepContractiveCNN
 import LipschitzMargin.DeepContractiveCNNConcrete
 import LipschitzMargin.DccnnLInfBox
+import LipschitzMargin.DccnnReadout

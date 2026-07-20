@@ -1,164 +1,117 @@
-# Finding: the DCCNN certificate applies a spectral (ℓ₂) Lipschitz constant to the L∞ box without the `√d` conversion
+# Finding (RE-SCOPED): the DCCNN `cert_bound` is norm-incoherent but not exposed as shipped
 
-> ⚠️ **SUPERSEDED — DO NOT SEND TO UCLA AS DRAFTED (AUDIT4.md §3, 2026-07-17).**
-> The exposure claim in §4 below is **refuted**: the shipped read-out row is uniform
-> `1/flat_dim`, so `‖w_out‖₂ = 1/√flat_dim` (= 1/32 at shipped configs), and the
-> all-ℓ₂ certificate `|Δg| ≤ ‖w_out‖₂·σλ^D·√d·ε` clears the shipped margin
-> `B = 1.1·cert_bound` by ≈ 8.8×. No shipped instance is exposed. What survives is a
-> norm-bookkeeping note (the formula is incoherent as written and unsafe for a
-> *non-uniform* read-out, `√d·‖w‖₂ > 2‖w‖₁`). Re-scope per AUDIT4 step N1 before any
-> external use. The Lean theorems cited below remain true and unaffected.
+> **STATUS — 2026-07-17, corrected.** The original exposure claim of this document (an
+> earlier draft asserted every shipped DCCNN instance was ~3.6× under-certified) was
+> **wrong** and is retracted. AUDIT4 (item J1) caught the error and it is now **machine-checked**
+> in [`LipschitzMargin/DccnnReadout.lean`](LipschitzMargin/DccnnReadout.lean). The shipped
+> read-out row is *uniform* `1/flat_dim`, so its ℓ₂ operator norm is `‖w‖₂ = 1/√flat_dim`, not
+> the ℓ₁ value `‖w‖₁ = 1` the draft used; under the standard all-ℓ₂ Lipschitz-margin
+> certificate the shipped margin clears the honest threshold by **≈ 8.8×**. **No shipped
+> instance is exposed; do not report this as a soundness bug.** What survives is a
+> norm-bookkeeping / robustness-of-process note (§5). The Lean theorems
+> `dccnn_robust_linf_box` and `dist_le_sqrt_dim_mul_linf` were always correct — the mistake
+> was only in the interpretation, and the same certificate theorem, instantiated with the
+> *right* operator norm, settles both the over-claim and its refutation.
 
-**Status:** ~~CONFIRMED code-level discrepancy~~ **REFUTED as an exposure claim (AUDIT4 J1)** · **Severity:** ~~high (unsafe direction)~~ low (bookkeeping) ·
-**Edge:** `dccnn-linf-sqrtd-metric` · **Lean anchor:**
-`VeriStressGT.LipschitzMargin.dccnn_robust_linf_box`
-(`LipschitzMargin/DccnnLInfBox.lean`) · **Date:** 2026-07-16
-
-The `cnn.deep_contractive_cnn` construction certifies robustness over the VNN-LIB **L∞**
-ε-box, but its certified perturbation multiplies a **spectral (ℓ₂→ℓ₂) Lipschitz constant** by
-`2ε` with **no `√d` factor**. The honest ℓ∞→ℓ₂ radius of the box is `√d·ε`, so the honest
-threshold is `L·√d·ε`. For the shipped input dimension `d = 64` this is `L·8ε` — a factor
-**4× larger** than the code's `L·2ε`, in the direction that can ship a **false-UNSAT**
-ground-truth instance. This is a distinct issue from the attention `n/4` finding
-([`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md)) — a different construction and a
-different mechanism (a metric-conversion factor, not a mis-substituted Jacobian bound) — but
-the same *kind* of defect: a missing dimensional factor in the unsafe direction.
+**Status:** norm-bookkeeping observation (NOT a soundness finding) · **Severity:** low ·
+**Edge:** `dccnn-linf-sqrtd-metric` (`kind: norm-bookkeeping`, `status: NOT-EXPOSED-AS-SHIPPED`) ·
+**Lean anchors:** `LipschitzMargin.dccnn_robust_linf_box`, `LipschitzMargin.dccnn_readout_robust`,
+`LipschitzMargin.uniform_readout_l2`, `LipschitzMargin.uniform_readout_code_bound_dominates`.
 
 ---
 
-## 1. The three artifacts
+## 1. The three artifacts (unchanged — the quotes are accurate)
 
 **The underlying theorem** — the Lipschitz-margin certificate (Tsuzuku–Sato–Sugiyama,
 NeurIPS 2018) is an **ℓ₂** statement: if a scalar margin `g` is `L`-Lipschitz *in the
-Euclidean norm* and `g(x₀) > L·ε`, then `g(x) > 0` for every `x` with `‖x − x₀‖₂ ≤ ε`. The
-perturbation radius `ε` is measured in the **same norm** `L` is a Lipschitz constant for —
-here ℓ₂. (Transcription: [`prose/lipschitz-margin-certificate.md`](prose/lipschitz-margin-certificate.md) §1.)
+Euclidean norm* and `g(x₀) > L·ε`, then `g(x) > 0` for every `x` with `‖x − x₀‖₂ ≤ ε`.
 
-**The code** — `robust_constructions/cnn/deep_contractive_cnn.py`. The network Lipschitz
-constant is a chain of **spectral** norms (power iteration = largest singular value =
-ℓ₂→ℓ₂ operator norm), and the certified perturbation folds in `2ε`:
+**The code** — `robust_constructions/cnn/deep_contractive_cnn.py`. The conv/proj Lipschitz
+constants are **spectral** (`_spectral_norm_power_iter` = largest singular value, ℓ₂→ℓ₂), and
+the certified perturbation folds in `2ε` with the read-out's ℓ₁ norm:
 ```python
-def _spectral_norm_power_iter(W, n_iter=20):        # largest singular value = ‖W‖₂
-    ...
-# each contractive conv is rescaled to spectral norm = contraction_rate (λ):
-def _normalize_to_spectral_norm(conv, target): ...  # ℓ₂→ℓ₂
-# certified perturbation (setup_output_layer, line 227):
-sigma_proj = _spectral_norm_power_iter(model.input_proj.weight)     # ℓ₂→ℓ₂
-w_out_l1   = model.fc.weight[model.label].abs().sum().item()        # = 1.0
+sigma_proj = _spectral_norm_power_iter(model.input_proj.weight)   # ℓ₂→ℓ₂
+w_out_l1   = model.fc.weight[model.label].abs().sum().item()      # = 1.0   (uniform row!)
 cert_bound = sigma_proj * (model.contraction_rate ** model.depth) * 2 * eps * w_out_l1
-#            └──────────────────────── L (spectral) ───────────────┘  × 2ε   (NO √d)
 ```
-The VNN-LIB query is an **L∞** box — every input coordinate ranges *independently* over
-`[x₀ᵢ − ε, x₀ᵢ + ε]` (`_write_vnnlib`, lines 390–397):
-```python
-lo, hi = x0 - eps, x0 + eps
-# (assert (>= X_i lo[i])) (assert (<= X_i hi[i]))   for every i in range(d)
+The VNN-LIB query is a per-coordinate **L∞** box (`_write_vnnlib`, lines 390–397), so an
+adversary may set all `d` coordinates to `±ε` simultaneously.
+
+**The Lean proof** — `dccnn_robust_linf_box` states the honest threshold over the L∞ box with
+the `√d` explicit; `dist_le_sqrt_dim_mul_linf` is the ℓ∞→ℓ₂ conversion; `dccnn_readout_robust`
+uses the read-out's **own operator norm** `‖w‖` as the Lipschitz constant.
+
+## 2. The metric conversion (correct, but not by itself a gap)
+
+The spectral constant supports the Euclidean bound `|f(x) − f(x₀)| ≤ L·‖x − x₀‖₂`, and over
+the L∞ box `‖x − x₀‖₂ ≤ √d·ε`. So the honest L∞-box threshold **does** carry a `√d` factor —
+that part of the original analysis is right, and `dccnn_robust_linf_box` machine-checks it.
+
+The error was to fix the Lipschitz constant as `L = σ·λ^D·‖w_out‖₁` (the code's bookkeeping)
+and conclude the `√d` is a net gap "under either reading." It is not: the margin functional
+is `g(x) = ⟨w_out, h(x)⟩ + B` (competitor rows and biases are zeroed — `setup_output_layer`),
+whose tight ℓ₂ Lipschitz constant is `‖w_out‖₂·σ·λ^D` by Cauchy–Schwarz (`readout_opNorm`:
+`‖innerSL w‖ = ‖w‖₂`). An instance is exposed only if **no** valid certificate reads it as
+robust — and the all-ℓ₂ reading is valid *and* far tighter than the ℓ₁ one used.
+
+## 3. Why the shipped instances are safe (≈ 8.8× margin)
+
+The shipped read-out row is **uniform**: `fc.weight[label] = 1/flat_dim`, with
+`flat_dim = channels·H·W`. Hence (machine-checked, `uniform_readout_l2`/`_l1`):
 ```
-So an adversary may set **all `d` coordinates** to `±ε` simultaneously.
-
-**The Lean proof** — `dccnn_robust_linf_box` (`LipschitzMargin/DccnnLInfBox.lean`) states the
-honest threshold over the L∞ box, with the `√d` explicit:
+‖w_out‖₂ = 1/√flat_dim          ‖w_out‖₁ = 1        (they differ by √flat_dim)
 ```
-(L·√d·ε < g x₀)  →  ∀ x with ‖x − x₀‖_∞ ≤ ε,  0 < g x
+At the shipped defaults `in_channels=1, H=W=8, channels=16`: `d = 64` (`√d = 8`),
+`flat_dim = 1024` (`√flat_dim = 32`). The honest all-ℓ₂ threshold and the shipped margin are
 ```
-Its glue `dist_le_sqrt_dim_mul_linf` is the machine-checked ℓ∞→ℓ₂ conversion
-`(∀ i, |xᵢ − x₀ᵢ| ≤ ε) → ‖x − x₀‖₂ ≤ √d·ε`. `Layer.toAffLayer_eval` additionally proves the
-IBP concrete-layer model and this spectral-chain model compute the *same* network, so the
-two accounts meet on one object.
-
-## 2. The derivation (why `√d` is required)
-
-The spectral constant `L = σ_proj · λ^D · ‖w_out‖` supports the Euclidean Lipschitz bound
+honest = ‖w_out‖₂·σλ^D·√d·ε = (1/32)·σλ^D·8·ε = 0.25·σλ^D·ε
+B      = 1.1·cert_bound       = 1.1·(σλ^D·2ε·1) = 2.2·σλ^D·ε
 ```
-|f(x) − f(x₀)|  ≤  L · ‖x − x₀‖₂ .
+so `B` clears the honest requirement by **8.8×**. The construction's labels are *proven*
+robust by the repo's own certificate theorem (`dccnn_readout_robust` at `‖w‖ = ‖w_out‖₂`).
+(The slack analysis — `slack = max(1e-3, 0.1·cert_bound)`, `B = 1.1·cert_bound` for every
+shipped config — was correct; only the read-out norm was wrong.)
+
+## 4. The general safety condition (machine-checked)
+
+The code's `cert_bound = σλ^D·2ε·‖w‖₁` dominates the honest `σλ^D·√d·ε·‖w‖₂` exactly when
 ```
-Over the L∞ box `‖x − x₀‖_∞ ≤ ε`, the worst case is a corner, where
+√d · ‖w‖₂  ≤  2 · ‖w‖₁ .
 ```
-‖x − x₀‖₂  =  √d · ε          (all d coordinates at ±ε).
-```
-Hence the honest threshold is `f(x₀) > L·√d·ε`. The code uses `L·2ε`. The `2` is an ℓ∞
-**diameter** convention ([`prose/00-overview-and-provenance.md`](prose/00-overview-and-provenance.md)),
-i.e. a *safe* 2× over-count of the ℓ∞ radius — but it is not the ℓ∞→ℓ₂ **radius** conversion
-`√d`. Comparing:
-```
-honest:  L · √d · ε          code:  L · 2 · ε
-```
-`√d` dominates the conservative `2` as soon as `d > 4`.
+For the uniform row (`‖w‖₂ = 1/√flat_dim`, `‖w‖₁ = 1`) this is `√d ≤ 2·√flat_dim`, i.e.
+`d ≤ 4·flat_dim`, i.e. **`in_channels ≤ 4·channels`** — true for every shipped and every
+reachable CLI configuration (`in_channels = 1`, `channels ≥ 16`). This is
+`uniform_readout_code_bound_dominates` (`d ≤ 4m ⟹ (1/√m)·L₀·√d·ε ≤ L₀·2ε`), axiom-clean.
 
-(The read-out norm is a separate, smaller bookkeeping question — the code pairs `‖w_out‖₁`
-with the spectral chain, edge LM-4 — but the `√d` gap is present under either reading, since
-the conv-stack ℓ₂ deviation routes into the last layer via `‖·‖_∞ ≤ ‖·‖₂`. The `√d` is the
-clean, machine-checked core, independent of the `√2`/`‖w_out‖₁` details.)
+**So the shipped formula is safe — but by accident, not by design.** It is not a coherent
+single-norm certificate (a spectral ℓ₂ chain × an ℓ₁ read-out × a `2` that is an L∞-diameter
+convention), and it is sound here only because the uniform read-out's `‖w‖₁/‖w‖₂ = √flat_dim`
+happens to dwarf `√d/2`.
 
-## 3. Why it matters (direction of the error)
+## 5. What survives (a latent robustness-of-process note)
 
-The construction *sets* the margin `B = f_y(x₀)` (via the head bias, `setup_output_layer`)
-to `cert_bound + slack`, forcing `f_y(x₀) > cert_bound = L·2ε`. Since the true worst-case
-deviation over the box is `L·√d·ε > L·2ε` (for `d > 4`), the certificate's own inequality
-does **not** rule out `f_y(x) ≤ f_k(x)` at a corner: the constructed margin is too small.
-A smaller certified perturbation means the construction accepts as UNSAT (robust) an instance
-whose ground-truth label its own theorem does not establish — a **false-UNSAT** in the
-making, corrupting exactly the ground truth the stress test measures.
+For a **non-uniform** read-out with `‖w‖₁ ≈ ‖w‖₂` (e.g. a one-hot / class-dependent row), the
+safety condition `√d·‖w‖₂ ≤ 2·‖w‖₁` fails as soon as `d > 4`, and the missing `√d` would bite
+silently. So the surviving, honest content is a *process* observation, safe to mention
+alongside the `n/4` conversation **clearly labeled "no shipped instance is exposed"**: if UCLA
+ever varies the read-out, the `cert_bound` formula should be re-derived as a single coherent
+norm (certify against `‖w‖₂·σλ^D·√d·ε`, or use ℓ∞→ℓ∞ operator norms end-to-end). The
+machine-checked `dccnn_readout_robust` is the drop-in coherent certificate.
 
-**Scope (sufficient, not necessary).** `L = σ_proj·λ^D·‖w_out‖` is a *global* Lipschitz
-bound; the *true local* margin drop over the box can be smaller, so an under-certified
-instance is **unproven-as-robust by the construction's theorem**, not provably non-robust.
-An empirical check (PGD, or a complete verifier at the corner `x₀ + ε·sign(∇f)`) is what
-distinguishes "unproven" from "actually false." Either outcome is worth reporting; the
-"provably robust by construction" guarantee does not hold for the instances as shipped.
+## 6. Relation to the still-open DCCNN concern
 
-## 4. The shipped instances are in the exposed regime (verified)
+Everything above (both the original over-claim and this correction) is computed against the
+code's *own* per-layer constants `σ_proj, λ`, which come from power iteration on the
+**reshaped kernel matrix** — exact for the 1×1 projection but *not* the true convolution
+operator norm for the 3×3 layers. That gap is the separate, still-open edge
+`dccnn-L-power-iter` (see `ucla-formalization-edges.md` Appendix A), unaffected by this
+correction and the strongest remaining DCCNN item. The `√d` metric point is settled: **not a
+soundness finding as shipped.**
 
-Every shipped DCCNN instance in [`configs/mini_sweep.yaml`](../../ta1/VeriStressGT/src/VeriStressGT/configs/mini_sweep.yaml)
-(`dc_cnn_01…07`) and `configs/sweep_all.yaml` (`dc_cnn1…`) overrides only `depth`,
-`channels`, `contraction_rate` (0.90), and `margin` (0.001); none overrides the input shape,
-so all use the CLI defaults `in_channels=1, height=8, width=8` — **input dimension `d = 64`,
-`√d = 8`.** The honest threshold is therefore `L·8ε`, versus the code's `L·2ε`: **a 4× gap.**
+## Lesson
 
-The cushion is `slack = max(margin_floor = 1e-3, 0.1·cert_bound)`, `B = cert_bound + slack`
-(lines 229–230). Soundness needs `B ≥ L·√d·ε = 4·cert_bound`, i.e. `slack ≥ 3·cert_bound`.
-
-- **The 10% slack term dominates the floor for every shipped config.** `cert_bound =
-  σ_proj·λ^D·2ε` with `ε = 0.02`, `λ = 0.9`; even the deepest shipped net (`D = 10`,
-  `λ^D ≈ 0.35`) with `σ_proj ≈ O(1)` gives `cert_bound ≈ 0.02`, so `0.1·cert_bound ≈ 2e-3 >
-  1e-3`. Hence `slack = 0.1·cert_bound` and `B = 1.1·cert_bound`.
-- **So every shipped instance falls short by ≈ 3.6×**: `B = 1.1·cert_bound` covers only
-  `1.1/4 ≈ 28 %` of the honest worst-case deviation `4·cert_bound`. The 10% slack was never
-  going to absorb a `√d/2 = 4×` deficit — this is much larger than the `2×` attention gap,
-  and (unlike the `dccnn-L-power-iter` power-iteration deficit, which the 10% slack *does*
-  bound) it is not cushioned.
-- Only a hypothetical instance with `cert_bound ≤ 2.5e-4` (so the `1e-3` floor dominates and
-  `1e-3 ≥ 3·cert_bound`) would be safe on this account; no shipped config is that small.
-
-**Therefore every shipped DCCNN instance fails its own certificate condition under the
-correct ℓ∞→ℓ₂ metric:** its UNSAT ground-truth label is unproven by the construction's
-theorem as shipped.
-
-## 5. How to close it
-
-Any one of: **(a)** certify against `L·√d·ε` (or `L·√d·2ε` keeping the diameter convention) —
-add the `√d`; **(b)** use ℓ∞→ℓ∞ operator norms (max absolute row sum) throughout instead of
-spectral norms, so the constant matches the L∞ box directly (no `√d`, but a different,
-generally larger `L`); or **(c)** interpret `eps` as an ℓ₂ budget and shrink it by `√d` —
-but the VNN-LIB box is genuinely L∞, so this changes the ground-truth query. Options (a)/(b)
-remove the unsafe direction.
-
-## 6. What we verified ourselves vs. what to ask UCLA
-
-**Verified from the code + a machine-checked proof (no UCLA input needed):**
-- The conv/proj Lipschitz constants are spectral (ℓ₂→ℓ₂) — power iteration returns the
-  largest singular value (`_spectral_norm_power_iter`).
-- The VNN-LIB query is a per-coordinate L∞ box over all `d = 64` shipped input dimensions.
-- The honest robustness threshold for an ℓ₂-Lipschitz margin over that box is `L·√d·ε`
-  (machine-checked `dccnn_robust_linf_box` / `dist_le_sqrt_dim_mul_linf`, axiom-clean); the
-  shipped `cert_bound = L·2ε` omits the `√d`, and the 10%/1e-3 cushion is ~3.6× short on
-  every shipped config.
-
-**The question for UCLA:** the certificate multiplies a spectral (ℓ₂) constant by `2ε` over
-an L∞ box. Applying the ℓ₂ Lipschitz-margin theorem to that box requires the ℓ∞→ℓ₂ factor
-`√d` (= 8 for the shipped `8×8` inputs). Is the omission intentional (e.g. is the chain meant
-to be ℓ∞→ℓ∞, in which case the spectral norms are the wrong operator norms)? If not,
-`cert_bound` under-certifies the perturbation by `√d/2 = 4×`, and every shipped DCCNN
-instance's "provably robust by construction" label is unproven as shipped. Raise alongside
-the attention `n/4` item (edge `attn-Lattn-n4-pooling`) and the power-iteration item (edge
-`dccnn-L-power-iter`).
+Three prior audits reviewed this finding for internal consistency and for the code/paper
+quotes (all accurate) but nobody recomputed `‖w_out‖₂` for the *shipped* read-out. The rule,
+matching the repo's own `ε`-double-count precedent (AUDIT F3): **exposure claims must be
+evaluated against the tightest valid certificate, not against the code's own bookkeeping** —
+and formalized (here, `DccnnReadout.lean`) before being externalized.

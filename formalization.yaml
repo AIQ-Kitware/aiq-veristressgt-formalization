@@ -75,7 +75,7 @@ status:
   repository_build:
     note: >
       VERIFIED GREEN, ZERO SORRY (last run 2026-07-10 via scripts/check.sh): `lake build`
-      clean, no sorry/admit, all 82 audited declarations axiom-clean {propext, Classical.choice,
+      clean, no sorry/admit, all 94 audited declarations axiom-clean {propext, Classical.choice,
       Quot.sound}. Both outside-audit gaps are closed in Lean: F4b (whole-network big-M wired
       to IBP box validity, ExactMILP/Network.lean) and F2 for BOTH attention constructions —
       linear (SelfAttention/LinearDominanceBlock.lean, DERIVED certificate) and softmax
@@ -111,7 +111,7 @@ status:
     theorem(s) fully proved (zero `sorry`), carrying the load-bearing edges as explicit
     hypotheses (e.g. LipschitzMargin.dccnn_robust_of_upper_bound takes the
     upper-bound premise the power-iteration `L̂` does not satisfy).
-  # All 82 audited declarations are proved (sorry_count 0) and axiom-clean
+  # All 94 audited declarations are proved (sorry_count 0) and axiom-clean
   # ({propext, Classical.choice, Quot.sound}) — verified by AxiomAudit.lean /
   # scripts/check.sh (56 through AUDIT2 + 2 Loewner (G8) + 3 fixed-pattern cert (step 1e) + 2 L∞→ℓ² glue (AUDIT3 H8)).
   # F2 (both attention constructions, incl. softmax LipschitzWith ½, the assembled fixed-pattern
@@ -219,10 +219,17 @@ status:
       tier: substantive
       sorry_count: 0
       axioms: [propext, Classical.choice, Quot.sound]
-    - declaration: "VeriStressGT.LipschitzMargin.dccnn_robust_linf_box"   # B4: + dist_le_sqrt_dim_mul_linf, Layer.toAffLayer_eval
+    - declaration: "VeriStressGT.LipschitzMargin.dccnn_robust_linf_box"   # B4: + dist_le_sqrt_dim_mul_linf, Layer.toAffLayer_eval (single-layer)
       file: "LipschitzMargin/DccnnLInfBox.lean"
-      source: "T1' (arXiv:1802.04034) — B4 L∞-box √d certificate + model unification (REFERENCE-COMPARISON.md §6)"
-      grounds: "cnn.deep_contractive_cnn — honest L∞-box threshold g(x₀)>L·√d·ε (the √d the shipped cert_bound=L·2ε omits; SECOND FINDING, edge dccnn-linf-sqrtd-metric). Layer.toAffLayer_eval unifies the IBP (IntervalBounds.Layer) and T1′ (AffLayer) network models"
+      source: "T1' (arXiv:1802.04034) — B4 honest L∞-box √d certificate + single-layer model bridge (REFERENCE-COMPARISON.md §6)"
+      grounds: "cnn.deep_contractive_cnn — honest L∞-box threshold g(x₀)>L·√d·ε (√d = ℓ∞→ℓ² conversion). Layer.toAffLayer_eval: SINGLE-LAYER bridge between IBP (IntervalBounds.Layer) and T1′ (AffLayer) evals (AUDIT4 J3: list-level bridge not yet done)"
+      tier: substantive
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+    - declaration: "VeriStressGT.LipschitzMargin.dccnn_readout_robust"   # AUDIT4 N1: + readout_opNorm, uniform_readout_l2/l1, uniform_readout_code_bound_dominates
+      file: "LipschitzMargin/DccnnReadout.lean"
+      source: "T1' (arXiv:1802.04034) — AUDIT4 N1 corrected read-out-norm account (refutes the dccnn √d exposure claim)"
+      grounds: "cnn.deep_contractive_cnn — corrected certificate using the read-out's ℓ² operator norm ‖w‖₂ (readout_opNorm: ‖innerSL w‖=‖w‖). For the shipped uniform read-out ‖w‖₂=1/√flat_dim (uniform_readout_l2), so the shipped margin clears the honest all-ℓ² threshold; NOT exposed (uniform_readout_code_bound_dominates: safe iff d ≤ 4·flat_dim). Refutes edge dccnn-linf-sqrtd-metric's exposure claim (AUDIT4 J1)"
       tier: substantive
       sorry_count: 0
       axioms: [propext, Classical.choice, Quot.sound]
@@ -263,7 +270,7 @@ status:
       axioms: []   # depends on no axioms at all
 
   verification:
-    method: "AxiomAudit.lean (#print axioms on all 82 audited declarations) + scripts/check.sh"
+    method: "AxiomAudit.lean (#print axioms on all 94 audited declarations) + scripts/check.sh"
     last_run: "2026-07-16"
     result: "green: lake build clean, no sorry/admit, all axioms in {propext, Classical.choice, Quot.sound}"
 
@@ -272,12 +279,13 @@ status:
     outside_audit: "AUDIT.md (2026-07-07, F1–F11) + AUDIT2.md (2026-07-09, G1–G9) + AUDIT3.md (2026-07-11, H1–H8). AUDIT3 verdict: completeness claim SUBSTANTIATED — paper citations independently verified against the PDF (eq.51/52/54/55, Prop.7), all G-items closed, PASS on scripts/check.sh. AUDIT3 pass done (2026-07-13): H1 (shipped configs at margin_slack=1.05 are in the exposed regime — documented), H4 (fpK public), H5 (abs_apply_le_norm de-duplicated into ForMathlib via PiLp.norm_apply_le), H6 (docstring/count fixed), H8 (L∞→ℓ² glue euclid_dist_le_sqrt_card_mul + score_row_deviation connecting score_deviation_unit → the cert seams). Git/provenance (H2/H3) handled by the maintainer."
     open_gaps:
       - "UCLA report (NON-LEAN, finding RESOLVED + SHARPENED): compute_L_attn uses n/4, paper eq.54 uses n/2 (= machine-checked Z_deviation_n2/fixedPattern_robust_derived); confirmed code-vs-paper bug, 2× unsafe. VERIFIED EXPOSED: all shipped fixed-pattern instances use margin_slack=1.05<2 → none satisfies the paper's own certificate (Prop.7) under the corrected constant. See FINDING-attn-Lattn-n4.md. Action: REPORT to UCLA (optionally PGD/complete-verifier-check one instance)."
-      - "UCLA report (NON-LEAN, SECOND FINDING, 2026-07-16): cnn.deep_contractive_cnn certifies on an L∞ ε-box with a SPECTRAL (ℓ²) Lipschitz constant but omits the ℓ∞→ℓ² conversion factor √d. cert_bound = L·2ε (deep_contractive_cnn.py:227) vs honest L·√d·ε (machine-checked dccnn_robust_linf_box). For input dim d>4, √d>2 so the code under-certifies the perturbation → margin B too small → false-UNSAT (unsafe). The 10% slack cannot absorb √d for d≥5 (image-scale d makes it orders of magnitude off); deep nets are accidentally safe via the 1e-3 floor. See FINDING-dccnn-linf-sqrtd.md; edge dccnn-linf-sqrtd-metric. Action: REPORT to UCLA (PGD/complete-verifier check a shallow d≥5 instance)."
+      - "DCCNN √d 'second finding' — REFUTED as an exposure claim (AUDIT4 J1, 2026-07-17); do NOT report as a soundness bug. The draft used the read-out ℓ¹ norm ‖w_out‖₁=1 where the tight ℓ² operator norm ‖w_out‖₂=1/√flat_dim applies; under the all-ℓ² certificate the shipped (uniform read-out) margin clears the honest threshold ≈8.8×. NOT exposed. Machine-checked correction in LipschitzMargin/DccnnReadout.lean (dccnn_readout_robust, uniform_readout_code_bound_dominates). Surviving content: a norm-bookkeeping note (formula unsafe only for a NON-uniform read-out, √d·‖w‖₂>2‖w‖₁). Optionally mention to UCLA as a process note alongside finding 1, clearly labeled not-exposed. The separate dccnn-L-power-iter edge (reshaped-kernel vs true conv operator norm) remains the strongest open DCCNN concern."
       - "External review (NON-LEAN): statement faithfulness of the Lean theorems to the source PDFs (AUDIT.md §5 step 7)."
     closed_this_pass:
-      - "B6 PAPER LEMMA 8 DOMINANT-KEY BOUND (2026-07-16, REFERENCE-COMPARISON.md §6 optional depth): SelfAttention/DominantKey.lean proves attn_dominant_key_bound — for any probability weights a, ‖∑ⱼ aⱼ·Vⱼ − V_{j*}‖ ≤ (1−a_{j*})·M where M bounds ‖Vⱼ−V_{j*}‖ over competitors. As a_{j*}→1 the attention output collapses onto the dominant value; specialised at a=softmax (softmax_nonneg/softmax_sum_one) this is the paper's Lemma 8, making the linear-dominance thread paper-complete (not just the exact-diagonal GatedAttn case). +1 audited decl (81→82). All B1–B6 roadmap items now landed."
+      - "AUDIT4 FOLLOW-UP (2026-07-17→20): fourth outside audit (AUDIT4.md, items J1–J8) REFUTED the DCCNN √d exposure claim (J1) and requested corrections. Done: (N1) LipschitzMargin/DccnnReadout.lean machine-checks the corrected read-out-norm account — readout_opNorm (‖innerSL w‖=‖w‖), uniform_readout_l2/l1 (uniform row ‖w‖₂=1/√flat_dim vs ‖w‖₁=1), uniform_readout_code_bound_dominates (safe iff √d·‖w‖₂≤2‖w‖₁ ⟺ d≤4·flat_dim), dccnn_readout_robust (corrected end-state); finding/README/DccnnLInfBox-header/edge all re-scoped to norm-bookkeeping NOT-EXPOSED-AS-SHIPPED. (N6) AxiomAudit 100% coverage (+softmax_apply/softmax_denom_pos/reluMap_apply/abs_apply_le_norm) and STATUS re-dated. Count 82→91 (+5 DccnnReadout, +4 hygiene wrappers). Finding 1 (attn n/4) re-confirmed at full strength (J-verdict), unchanged."
+      - "B6 PAPER LEMMA 8 DOMINANT-KEY BOUND — CORE (2026-07-16, REFERENCE-COMPARISON.md §6 optional depth; scope corrected AUDIT4 J2): SelfAttention/DominantKey.lean proves attn_dominant_key_bound — for any probability weights a, ‖∑ⱼ aⱼ·Vⱼ − V_{j*}‖ ≤ (1−a_{j*})·M where M bounds ‖Vⱼ−V_{j*}‖ over competitors. This is the CONVEX-COMBINATION CORE (paper eq.60-61) of Lemma 8's proof, NOT Lemma 8 as stated: the dominance-ratio bridge (a_{j*}≥ρ/(1+ρ), eq.59) and the 1/(1+ρ) conclusion, plus Props 9-10, are not yet formalized and A.7 has no prose transcription (AUDIT4 J2 → step N2). +1 audited decl (81→82). All B1–B6 roadmap items landed (B6 = Lemma 8 core)."
       - "B2 PATTERN STABILITY (paper Prop.6) ON THE CONCRETE INSTANCE (2026-07-16, REFERENCE-COMPARISON.md §6): SelfAttention/FixedPatternStable.lean proves dotProductAttn_pattern_stable — for the concrete dotProductAttn, if the nominal score gap to π* exceeds 2·B_S·ε for every competitor, then π* is the STRICT argmax of the score row for EVERY X in the L∞ box (not just at X₀). This is the genuine 'attention pattern is constant on the box' proposition, retiring the PatternFixed proxy caveat that the docstrings carried since the first audit (edge attn-fixed-pattern-gap/SA-3). Entry deviation via dotProductAttn_score_entry_dev (score_deviation_unit, B_S·ε = |α|(2√d·ε+d·ε²)). +2 audited decls (79→81; true pre-B1 baseline was 63, not the 62 earlier docs miscounted)."
-      - "B4 L∞-BOX √d CERTIFICATE + MODEL BRIDGE (2026-07-16, REFERENCE-COMPARISON.md §6): unified the two network models and settled edge LM-4, producing a SECOND code finding. LipschitzMargin/DccnnLInfBox.lean: dccnn_robust_linf_box states the honest threshold g(x₀)>L·√d·ε over the VNN-LIB L∞ box (dist_le_sqrt_dim_mul_linf: L∞ per-coord ≤ε ⟹ ℓ² dist ≤√d·ε), exposing the √d the shipped cert_bound=L·2ε omits (unsafe for d>4 — see the open_gaps SECOND FINDING + FINDING-dccnn-linf-sqrtd.md). Layer.toAffLayer_eval bridges IntervalBounds.Layer (IBP/MILP, sup-metric Fin n→ℝ) and LipschitzMargin.AffLayer (T1′ spectral, EuclideanSpace): both compute the same map, so the two network formalizations are one object. +3 audited decls (76→79)."
+      - "B4 HONEST L∞-BOX √d CERTIFICATE + SINGLE-LAYER MODEL BRIDGE (2026-07-16, REFERENCE-COMPARISON.md §6; exposure claim REFUTED AUDIT4 J1, bridge scope corrected J3). LipschitzMargin/DccnnLInfBox.lean: dccnn_robust_linf_box states the honest threshold g(x₀)>L·√d·ε over the VNN-LIB L∞ box (dist_le_sqrt_dim_mul_linf: L∞ per-coord ≤ε ⟹ ℓ² dist ≤√d·ε). The √d is real, but the derived 'second finding' (code under-certifies) was WRONG — the shipped uniform read-out makes the all-ℓ² certificate clear the margin ≈8.8× (corrected in DccnnReadout.lean, AUDIT4 N1). Layer.toAffLayer_eval is a SINGLE-LAYER bridge between IntervalBounds.Layer (IBP) and LipschitzMargin.AffLayer (T1′) evals; the list-level 'same network' statement is not yet done (AUDIT4 J3 → step N4). +3 audited decls (76→79)."
       - "B3 TIGHTNESS AS THEOREMS (2026-07-16, REFERENCE-COMPARISON.md §6): the softmax ½ bounds were claimed tight in docstrings only; now machine-checked in ForMathlib/Analysis/SoftmaxTight.lean. softmaxJac_opNorm_eq_half_witness: ‖softmaxJac(½,½)‖=½ (v=(1,-1) is a ½-eigenvector since ∑aⱼvⱼ=0, so ½≤‖J‖≤½). lipschitzWith_softmax_optimal: no K<½ is a Lipschitz constant of softmax on EuclideanSpace ℝ (Fin 2) (fderiv at s=0 = toEuclideanCLM(softmaxJac(softmax 0)) has norm ½; HasFDerivAt.le_of_lipschitz). With lipschitzWith_softmax this pins the constant to exactly ½ — the sharpness upstream maintainers ask for. +2 audited decls (74→76)."
       - "B1 CONCRETIZATION LAYER (2026-07-16, REFERENCE-COMPARISON.md §6): closes the one R1/R2 discipline gap the reference-comparison pass found — the attention/CNN certificates were proved over ABSTRACT blocks (FixedPatternAttn/GatedAttn/AffLayer), so the derivable deviation facts entered as hypotheses. Now three concrete instances construct the shipped maps and DERIVE those facts: (a) SelfAttention/FixedPatternConcrete.lean — dotProductAttn α W_V (score Sᵢⱼ=α⟪Xᵢ,Xⱼ⟫, value W_V Xⱼ); fixedPattern_robust_concrete discharges hρ (score_deviation_unit→score_row_deviation) and hδV (W_V op-norm), leaving only weights/unit-token/Vmax/margin. (b) SelfAttention/LinearDominanceConcrete.lean — innerGate Q K W_V (gate ⟪Q Xᵢ,K Xᵢ⟫); linearDominance_robust_concrete discharges hw (inner_deviation_bound) and hV, honest Δw=‖Q‖√dε(g+‖K‖√dε)+g‖K‖√dε ≤ code's 2ε(g+ε). (c) LipschitzMargin/DeepContractiveCNNConcrete.lean — reluMap proved LipschitzWith 1 (pointwise |max a 0−max b 0|≤|a−b| in ℓ²), reluLayer discharges AffLayer.hact. Shared L∞→ℓ² glue in SelfAttention/ConcreteGlue.lean (token_l2_dev: ‖ΔXᵢ‖₂≤√d·ε). +11 audited declarations (63→74); scripts/check.sh green."
       - "G1: fixed-pattern chain ASSEMBLED (Z_deviation/Z_deviation_n2) AND the full cert fixedPattern_robust_derived (step 1e, aggregate zflat + head + margin) — softmax construction fully certified from construction-level quantities, no assumed Lipschitz constant."
@@ -308,18 +316,18 @@ edges:
   - id: dccnn-linf-sqrtd-metric
     card: ta1/VeriStressGT/cards/evaluation.yaml
     construction: cnn.deep_contractive_cnn
-    status: "CONFIRMED code-level discrepancy (2026-07-16) — see FINDING-dccnn-linf-sqrtd.md"
+    status: "NOT-EXPOSED-AS-SHIPPED (AUDIT4 J1, 2026-07-17) — exposure claim REFUTED; norm-bookkeeping note only. See FINDING-dccnn-linf-sqrtd.md + LipschitzMargin/DccnnReadout.lean."
     assumption:
-      theorem: "T1' Lipschitz-margin over the VNN-LIB L∞ box needs the ℓ∞→ℓ² factor √d: honest threshold g(x₀) > L·√d·ε (= machine-checked dccnn_robust_linf_box)"
-      lean: VeriStressGT.LipschitzMargin.dccnn_robust_linf_box   # honest √d threshold; dist_le_sqrt_dim_mul_linf glue
+      theorem: "T1' Lipschitz-margin over the VNN-LIB L∞ box uses the ℓ∞→ℓ² factor √d AND the read-out's ℓ² operator norm ‖w‖₂: honest threshold g(x₀) > ‖w‖₂·σλ^D·√d·ε (= machine-checked dccnn_readout_robust)"
+      lean: VeriStressGT.LipschitzMargin.dccnn_readout_robust   # corrected end-state; dccnn_robust_linf_box + readout_opNorm + uniform_readout_l2
       prose: prose/lipschitz-margin-certificate.md   # LM-4
     relaxation:
       code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/cnn/deep_contractive_cnn.py
       line: 227
-      informal: "cert_bound = σ_proj·λ^D·2ε·‖w_out‖₁ uses a SPECTRAL (ℓ²) constant against an L∞ box with 2ε (diameter) and NO √d. For input dim d>4, √d>2 so the code under-certifies the perturbation → margin too small → false-UNSAT (unsafe). 10% slack cannot absorb √d for d≥5; deep nets accidentally safe via the 1e-3 floor. Second finding, structurally like attn-Lattn-n4."
+      informal: "cert_bound = σλ^D·2ε·‖w_out‖₁ is norm-incoherent (spectral ℓ² chain × ℓ¹ read-out × diameter-2 over an L∞ box) but SAFE as shipped: the uniform read-out has ‖w_out‖₂=1/√flat_dim, so the honest all-ℓ² threshold ‖w_out‖₂·σλ^D·√d·ε is cleared by the shipped margin ≈8.8× (uniform_readout_code_bound_dominates: safe iff √d·‖w‖₂ ≤ 2·‖w‖₁, i.e. in_channels ≤ 4·channels — true for all shipped configs). NOT exposed. Latent risk only: a non-uniform read-out (‖w‖₁≈‖w‖₂) would be unsafe for d>4. The exposure draft's √d/2 claim used ‖w‖₁ where ‖w‖₂ applies (AUDIT4 J1)."
     finding: FINDING-dccnn-linf-sqrtd.md
-    kind: code-metric-mismatch
-    severity: high
+    kind: norm-bookkeeping
+    severity: low
   - id: poly-nbc-surrogate
     card: ta1/VeriStressGT/cards/evaluation.yaml
     construction: polynomial.algebraic_boundary

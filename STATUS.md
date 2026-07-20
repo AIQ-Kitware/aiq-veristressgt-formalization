@@ -9,23 +9,24 @@ declarations the axiom audit covers. The machine-readable mirror is
 
 ## Latest verification
 
-- **Date:** 2026-07-16
-- **Commit checked:** `f442d23` (`feat(B2): paper Prop 6 pattern stability on the concrete instance`)
-  and the doc/status commit that follows it.
+- **Date:** 2026-07-20
+- **Commit checked:** the AUDIT4-follow-up commit this `STATUS.md` is part of (built on
+  `d2f65f4`, `AUDIT4`), which lands the corrected DCCNN read-out-norm account
+  (`LipschitzMargin/DccnnReadout.lean`) and steps N3/N4/N6.
 - **Toolchain:** `leanprover/lean4:v4.31.0-rc2`; Mathlib pinned in `lake-manifest.json`.
-- **Command:** `bash scripts/check.sh` (`scripts/check.sh` sha256 `16a8d126…e98a096`).
+- **Command:** `bash scripts/check.sh`.
 - **Result: PASS.** Exit 0. The three stages reported:
   1. `lake build` — completed successfully, no errors.
   2. no-`sorry`/`admit` scan over `ForMathlib LipschitzMargin SelfAttention IntervalBounds
      ExactMILP AlgebraicBoundary Verifier` — `OK: no sorry/admit tactics.`
-  3. axiom audit — `#print axioms` over all **82 audited declarations**
+  3. axiom audit — `#print axioms` over all **94 audited declarations**
      ([`AxiomAudit.lean`](AxiomAudit.lean)) shows only `{propext, Classical.choice, Quot.sound}`
      (no `sorryAx`, `native_decide`, or `ofReduceBool`).
 
 **Scope of the claim.** "Proved" here means the *published certificate theorems* (T1–T6
 templates) and, for the concrete constructions, the derivation of the sensitivity constants
 from construction-level quantities. It is **not** a claim that every *shipped* instance is
-certifiably robust — see the two findings below. The 82 audited declarations are exactly the
+certifiably robust — see the two findings below. The 94 audited declarations are exactly the
 list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by this record.
 
 ## Reference-comparison roadmap (REFERENCE-COMPARISON.md §6)
@@ -35,17 +36,17 @@ list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by 
 | B1 concretization layer | ✅ landed | `fixedPattern_robust_concrete`, `linearDominance_robust_concrete`, `reluLayer` |
 | B2 pattern stability (Prop 6) | ✅ landed | `dotProductAttn_pattern_stable` |
 | B3 tightness as theorems | ✅ landed | `softmaxJac_opNorm_eq_half_witness`, `lipschitzWith_softmax_optimal` |
-| B4 model unification + LM-4 | ✅ landed | `Layer.toAffLayer_eval`, `dccnn_robust_linf_box` |
+| B4 model bridge + LM-4 | ✅ single-layer + list-level | `Layer.toAffLayer_eval`, `netMap_reverse_toAffLayer_eval`, `dccnn_robust_linf_box`, `dccnn_readout_robust` |
 | B5 process parity | ✅ this file | — |
-| B6 optional depth | ✅ Lemma 8 landed | `attn_dominant_key_bound` (heterogeneous-width `Layer` + sharper softmax row remain as further optional depth) |
+| B6 optional depth | ✅ Lemma 8 **core** | `attn_dominant_key_bound` (Lemma 8's convex-combination core; the ρ-bridge + Props 9–10 and A.7 prose remain — AUDIT4 J2/N2) |
 
-## Confirmed findings (machine-checked anchors; NON-LEAN action = report to UCLA)
+## Findings (one confirmed, one refuted — both machine-checked)
 
-1. **`attn-Lattn-n4`** — `compute_L_attn` uses `n/4`; the paper (eq. 54) and the machine-checked
+1. **CONFIRMED · `attn-Lattn-n4`** — `compute_L_attn` uses `n/4`; the paper (eq. 54) and the machine-checked
    `Z_deviation_n2` use `n/2`. Code under-certifies `L_attn` ~2× (unsafe). Shipped fixed-pattern
    instances at `margin_slack = 1.05 < 2` are in the exposed regime.
    [`FINDING-attn-Lattn-n4.md`](FINDING-attn-Lattn-n4.md).
-2. **`dccnn-linf-sqrtd-metric`** — ⚠️ **exposure claim REFUTED by AUDIT4 (2026-07-17, J1); do
+2. **REFUTED · `dccnn-linf-sqrtd-metric`** — ⚠️ **exposure claim REFUTED by AUDIT4 (2026-07-17, J1); do
    not report as a soundness finding.** The shipped uniform read-out has `‖w_out‖₂ = 1/√flat_dim`,
    and the all-ℓ₂ certificate clears the shipped margin ≈ 8.8×; no shipped instance is exposed.
    Surviving content: a norm-bookkeeping note (formula incoherent as written; unsafe only for a

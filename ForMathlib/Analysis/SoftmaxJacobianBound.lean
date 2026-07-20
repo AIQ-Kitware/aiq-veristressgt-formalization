@@ -115,8 +115,6 @@ private theorem sj_var_le (a v : Fin n → ℝ) (hnn : ∀ i, 0 ≤ a i) (hsum :
 private theorem softmaxJac_isHermitian (a : Fin n → ℝ) : (softmaxJac a).IsHermitian := by
   apply Matrix.IsHermitian.sub
   · -- diagonal of real entries is Hermitian
-    -- FLAG(build): if `Matrix.isHermitian_diagonal` is misnamed, prove via
-    -- `show (diagonal a)ᴴ = diagonal a; ext i j; simp [conjTranspose_apply, diagonal]`.
     exact Matrix.isHermitian_diagonal a
   · show (Matrix.of (fun i j => a i * a j))ᴴ = Matrix.of (fun i j => a i * a j)
     ext i j

@@ -101,12 +101,16 @@ Numbered so `ucla-formalization-edges.md` can cite them (`LM-#`).
   `L₂` vs. `L∞→L₁` duality) must match the VNN-LIB `L∞` box exactly — an easy
   place for an off-by-a-constant that either loosens (safe) or, if wrong,
   invalidates the ground truth.
-  **RESOLVED (2026-07-16) — SECOND FINDING.** The spectral (ℓ²) constant `L` is
-  applied to the `L∞` ε-box with `2ε` and **no `√d`**: the honest ℓ∞→ℓ² radius is
-  `√d·ε`, so the honest threshold is `L·√d·ε`, not `L·2ε`. For input dim `d > 4`
-  the code under-certifies (unsafe / false-UNSAT). Machine-checked anchor
-  `LipschitzMargin.dccnn_robust_linf_box`; see `FINDING-dccnn-linf-sqrtd.md`,
-  edge `dccnn-linf-sqrtd-metric`.
+  **RESOLVED (2026-07-17, AUDIT4 J1) — NOT a soundness finding.** The honest L∞-box
+  threshold does carry the `ℓ∞→ℓ²` factor `√d` *and* uses the read-out's ℓ²
+  operator norm `‖w‖₂` (not `‖w‖₁`). For the shipped **uniform** read-out
+  `‖w‖₂ = 1/√flat_dim ≪ ‖w‖₁ = 1`, so the all-ℓ² certificate clears the shipped
+  margin ≈ `8.8×` — no shipped instance is exposed. The code's `cert_bound` is
+  norm-incoherent but safe here (safe iff `√d·‖w‖₂ ≤ 2‖w‖₁`, i.e.
+  `in_channels ≤ 4·channels`); a *non-uniform* read-out would be unsafe for `d>4`.
+  Machine-checked: `LipschitzMargin.dccnn_readout_robust` /
+  `uniform_readout_code_bound_dominates`; see `FINDING-dccnn-linf-sqrtd.md`,
+  edge `dccnn-linf-sqrtd-metric` (`kind: norm-bookkeeping`).
 - **LM-5 (empirical check is not a proof).** `verify_certificate_empirically`
   (line 307) samples **20 000** random `δ` and checks all-correct. This is a
   *sanity test of the construction*, not a certificate; a passing empirical check

@@ -103,4 +103,21 @@ theorem fixedPattern_robust_concrete [NeZero n]
     (mul_nonneg (Real.sqrt_nonneg _) hBSε0) (mul_nonneg (norm_nonneg _) hδ0) hVmax0
     hρ hδV hVmax hmargin
 
+/-- **`fpK` = the paper's `L_attn(ε)·ε`, term by term (AUDIT4 N3, closes J4).**  With the
+construction's seams `ρ = √n·B_S·ε` (score-row deviation) and `δV = σ_V·√d·ε` (value
+deviation, `σ_V = ‖W_V‖`), the per-token output budget `fpK` expands to exactly the paper's
+eq. 54 attention constant times `ε`:
+`(n/2)·B_S·ε·Vmax  +  σ_V·√d·ε  +  (n/2)·B_S·ε·(σ_V·√d·ε)`.  This makes the term-by-term
+match in `FINDING-attn-Lattn-n4.md` §1 machine-checked (the only non-`ring` step is
+`√n·√n = n`) — the `n/2` leading coefficient the shipped `compute_L_attn` under-counts as
+`n/4`. -/
+theorem fpK_eq_Lattn_mul_eps (n : ℕ) (BS ε σV sqrtd Vmax : ℝ) :
+    fpK n (Real.sqrt n * BS * ε) (σV * sqrtd * ε) Vmax
+      = ((n : ℝ) / 2) * BS * ε * Vmax
+        + σV * sqrtd * ε
+        + ((n : ℝ) / 2) * BS * ε * (σV * sqrtd * ε) := by
+  unfold fpK
+  have h : Real.sqrt (n : ℝ) * Real.sqrt (n : ℝ) = (n : ℝ) := Real.mul_self_sqrt (by positivity)
+  linear_combination (BS * ε * (Vmax + σV * sqrtd * ε) / 2) * h
+
 end VeriStressGT.SelfAttention

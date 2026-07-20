@@ -21,15 +21,18 @@ import Verifier
 
 open VeriStressGT
 
--- ForMathlib (4)
+-- ForMathlib (7)
 #print axioms ForMathlib.ibp_affine_sound
 #print axioms ForMathlib.ibp_relu_sound
 #print axioms ForMathlib.lipschitz_affine_of_opNorm
+#print axioms ForMathlib.abs_apply_le_norm
 #print axioms ForMathlib.softmax_jacobian_opNorm_le_half
 #print axioms ForMathlib.softmaxJac_posSemidef
 #print axioms ForMathlib.two_smul_softmaxJac_le_one
 
--- ForMathlib.SoftmaxLipschitz — F2-B (softmax LipschitzWith ½, 6)
+-- ForMathlib.SoftmaxLipschitz — F2-B (softmax LipschitzWith ½, 8)
+#print axioms ForMathlib.softmax_apply
+#print axioms ForMathlib.softmax_denom_pos
 #print axioms ForMathlib.softmax_nonneg
 #print axioms ForMathlib.softmax_sum_one
 #print axioms ForMathlib.softmaxJac_opNorm_le_half
@@ -56,15 +59,25 @@ open VeriStressGT
 #print axioms LipschitzMargin.dccnn_robust_of_true_L
 #print axioms LipschitzMargin.dccnn_robust_of_upper_bound
 
--- LipschitzMargin.DeepContractiveCNNConcrete — B1.6 concrete ReLU activation (3)
+-- LipschitzMargin.DeepContractiveCNNConcrete — B1.6 concrete ReLU activation (4)
+#print axioms LipschitzMargin.reluMap_apply
 #print axioms LipschitzMargin.lipschitzWith_reluMap
 #print axioms LipschitzMargin.reluLayer_W
 #print axioms LipschitzMargin.dccnn_robust_concrete
 
--- LipschitzMargin.DccnnLInfBox — B4 honest L∞-box √d certificate + model bridge (3)
+-- LipschitzMargin.DccnnLInfBox — B4 honest L∞-box √d certificate + model bridge (5)
 #print axioms LipschitzMargin.dist_le_sqrt_dim_mul_linf
 #print axioms LipschitzMargin.dccnn_robust_linf_box
 #print axioms LipschitzMargin.Layer.toAffLayer_eval
+#print axioms LipschitzMargin.netMap_append_singleton
+#print axioms LipschitzMargin.netMap_reverse_toAffLayer_eval
+
+-- LipschitzMargin.DccnnReadout — AUDIT4 N1 corrected read-out-norm account (5)
+#print axioms LipschitzMargin.readout_opNorm
+#print axioms LipschitzMargin.uniform_readout_l2
+#print axioms LipschitzMargin.uniform_readout_l1
+#print axioms LipschitzMargin.uniform_readout_code_bound_dominates
+#print axioms LipschitzMargin.dccnn_readout_robust
 
 -- SelfAttention (5)
 #print axioms SelfAttention.linearDominance_token_bound
@@ -97,10 +110,11 @@ open VeriStressGT
 #print axioms SelfAttention.token_l2_dev
 #print axioms SelfAttention.clm_token_dev
 
--- SelfAttention.FixedPatternConcrete — B1 concrete dot-product instance (3)
+-- SelfAttention.FixedPatternConcrete — B1 concrete dot-product instance (4; +N3 fpK=eq54)
 #print axioms SelfAttention.dotProductAttn_score_apply
 #print axioms SelfAttention.dotProductAttn_V_apply
 #print axioms SelfAttention.fixedPattern_robust_concrete
+#print axioms SelfAttention.fpK_eq_Lattn_mul_eps
 
 -- SelfAttention.LinearDominanceConcrete — B1 concrete inner-product gate (3)
 #print axioms SelfAttention.innerGate_w_apply
