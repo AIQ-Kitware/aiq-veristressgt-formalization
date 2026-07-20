@@ -3,8 +3,8 @@
 Source: VeriStressGT paper (arXiv:2605.17153), Appendix A.7. This file transcribes the
 *argument structure* of the linear-dominance certificate as used by the Lean development in
 [`SelfAttention/DominantKey.lean`](../SelfAttention/DominantKey.lean); the equation-number
-crosswalk follows the audit's PDF extraction (AUDIT4.md §4/N2). Lemma 8 is formalized *as
-stated*; Props 9–10 are transcribed here as the remaining targets.
+crosswalk follows the audit's PDF extraction (AUDIT4.md §4/N2). **Lemma 8 and Props 9–10 are
+now all formalized** — A.7 is machine-checked end to end.
 
 ## Setup
 
@@ -33,7 +33,7 @@ dominance ratio and the spread of the competing values:
   w_{j*}` (the hypothesis). — Lean: `dominant_weight_bound`.
 - Composing gives Lemma 8. — Lean: `attn_dominant_key_bound_rho`.
 
-## Proposition 9 (App. A.7) — three-term insertion bound — REMAINING
+## Proposition 9 (App. A.7) — three-term insertion bound — FORMALIZED (`attn_output_perturbation`)
 
 Over the `L∞` ε-box, with per-row dominance at both `X` and `X₀` (same `j*ᵢ`, uniform `ρ`),
 nominal value spread `‖V₀ⱼ − V₀,j*‖ ≤ ΔV` and value drift `‖V_X j − V₀ j‖ ≤ ε·L_V`, the
@@ -44,7 +44,7 @@ per-row output moves by (eq. 63)
 Proof shape (eq. 64–67): triangle through `V_X(j*)` and `V₀(j*)`, apply Lemma 8 at `X` (with
 spread `≤ ΔV + 2εL_V`) and at `X₀` (spread `ΔV`), and the middle term by the value drift.
 
-## Proposition 10 (App. A.7) — the certificate — REMAINING
+## Proposition 10 (App. A.7) — the certificate — FORMALIZED (`linAttn_dominant_robust`)
 
 With `Δ_lin := (2/(1+ρ))·ΔV + (1 + 2/(1+ρ))·ε·L_V` and a linear head `W_head`, a nominal
 margin exceeding `2·‖W_head‖·√n·Δ_lin` for every competitor certifies robustness on the box

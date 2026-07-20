@@ -233,7 +233,7 @@ declaration corresponds to.
   uses `l ≤ s ≤ u`); (b) `linearDominance_robust` / `fixedPattern_robust` docstrings claimed
   to "compose `token_bound`" but actually **assume** the block `LipschitzWith` constant — now
   documented honestly as the margin step *modulo* the Lipschitz-constant derivation.
-- **ZERO `sorry`: all 98 audited declarations proved & axiom-clean,** verified by
+- **ZERO `sorry`: all 101 audited declarations proved & axiom-clean,** verified by
   `scripts/check.sh` / `AxiomAudit.lean` (both audit gaps F2 and F4b fully closed for BOTH
   attention constructions, incl. the unconditional softmax `LipschitzWith ½` and the assembled
   fixed-pattern output bound — below). Flagship

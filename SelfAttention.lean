@@ -15,3 +15,4 @@ import SelfAttention.FixedPatternConcrete
 import SelfAttention.LinearDominanceConcrete
 import SelfAttention.FixedPatternStable
 import SelfAttention.DominantKey
+import SelfAttention.DominantKeyCert

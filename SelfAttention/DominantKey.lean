@@ -111,4 +111,61 @@ theorem attn_dominant_key_bound_rho [NeZero n] (w : Fin n → ℝ) (hw : ∀ j, 
     (linAttnWeight_sum_one w hw) V jstar M hM).trans
     (mul_le_mul_of_nonneg_right (dominant_weight_bound w hw jstar ρ hρ hdom) hM0)
 
+/-! ### Proposition 9 — output perturbation over the box (AUDIT4 N2 step 4) -/
+
+/--
+**Prop. 9 (paper A.7, eq. 63).**  Two attention rows — `a` at the perturbed input `X` over
+values `V`, and `a₀` at `X₀` over values `V₀` — both dominated by the *same* key `j*` with
+`1 − a_{j*}, 1 − a₀_{j*} ≤ q` (so `q = 1/(1+ρ)` from `dominant_weight_bound`).  With nominal
+value spread `‖V₀ⱼ − V₀_{j*}‖ ≤ ΔV` over competitors and value drift `‖Vⱼ − V₀ⱼ‖ ≤ εLV`, the
+attention output moves by
+
+  `‖∑ⱼ aⱼ·Vⱼ − ∑ⱼ a₀ⱼ·V₀ⱼ‖ ≤ 2·q·ΔV + (1 + 2·q)·εLV`.
+
+Proof (eq. 64–67): triangle through the dominant values `V_{j*}`, `V₀_{j*}`; Lemma 8 at `X`
+(spread `≤ ΔV + 2εLV` by add/subtract nominal values) and at `X₀` (spread `ΔV`); the middle
+term by the drift `εLV`. -/
+theorem attn_output_perturbation [NeZero n]
+    (a a₀ : Fin n → ℝ) (hnn : ∀ j, 0 ≤ a j) (hsum : ∑ j, a j = 1)
+    (hnn₀ : ∀ j, 0 ≤ a₀ j) (hsum₀ : ∑ j, a₀ j = 1)
+    (V V₀ : Fin n → EuclideanSpace ℝ (Fin dv)) (jstar : Fin n)
+    (q ΔV εLV : ℝ) (hΔV : 0 ≤ ΔV) (hLV0 : 0 ≤ εLV)
+    (haq : 1 - a jstar ≤ q) (ha₀q : 1 - a₀ jstar ≤ q)
+    (hspread : ∀ j, j ≠ jstar → ‖V₀ j - V₀ jstar‖ ≤ ΔV)
+    (hdrift : ∀ j, ‖V j - V₀ j‖ ≤ εLV) :
+    ‖(∑ j, a j • V j) - (∑ j, a₀ j • V₀ j)‖ ≤ 2 * q * ΔV + (1 + 2 * q) * εLV := by
+  -- q ≥ 0 from 1 − a₀_{j*} ≤ q and a₀_{j*} ≤ 1
+  have hq0 : 0 ≤ q := le_trans (by
+    have : a₀ jstar ≤ ∑ j, a₀ j := Finset.single_le_sum (fun j _ => hnn₀ j) (Finset.mem_univ jstar)
+    rw [hsum₀] at this; linarith) ha₀q
+  -- Lemma-8 at X₀ (spread ΔV)
+  have hZ0 : ‖(∑ j, a₀ j • V₀ j) - V₀ jstar‖ ≤ q * ΔV :=
+    (attn_dominant_key_bound a₀ hnn₀ hsum₀ V₀ jstar ΔV hspread).trans
+      (mul_le_mul_of_nonneg_right ha₀q hΔV)
+  -- Lemma-8 at X (spread ΔV + 2εLV)
+  have hspreadX : ∀ j, j ≠ jstar → ‖V j - V jstar‖ ≤ ΔV + 2 * εLV := by
+    intro j hj
+    calc ‖V j - V jstar‖
+        = ‖(V j - V₀ j) + (V₀ j - V₀ jstar) + (V₀ jstar - V jstar)‖ := by congr 1; abel
+      _ ≤ ‖V j - V₀ j‖ + ‖V₀ j - V₀ jstar‖ + ‖V₀ jstar - V jstar‖ :=
+          (norm_add₃_le)
+      _ ≤ εLV + ΔV + εLV := by
+          refine add_le_add (add_le_add (hdrift j) (hspread j hj)) ?_
+          rw [← norm_neg]; simpa using hdrift jstar
+      _ = ΔV + 2 * εLV := by ring
+  have hZX : ‖(∑ j, a j • V j) - V jstar‖ ≤ q * (ΔV + 2 * εLV) :=
+    (attn_dominant_key_bound a hnn hsum V jstar (ΔV + 2 * εLV) hspreadX).trans
+      (mul_le_mul_of_nonneg_right haq (by linarith))
+  have hjstar : ‖V jstar - V₀ jstar‖ ≤ εLV := hdrift jstar
+  -- triangle: ZX − ZX₀ = (ZX − V_{j*}) − (ZX₀ − V₀_{j*}) + (V_{j*} − V₀_{j*})
+  have htri : ‖(∑ j, a j • V j) - (∑ j, a₀ j • V₀ j)‖
+      ≤ ‖(∑ j, a j • V j) - V jstar‖ + ‖(∑ j, a₀ j • V₀ j) - V₀ jstar‖
+        + ‖V jstar - V₀ jstar‖ := by
+    have heq : (∑ j, a j • V j) - (∑ j, a₀ j • V₀ j)
+        = ((∑ j, a j • V j) - V jstar) - ((∑ j, a₀ j • V₀ j) - V₀ jstar)
+          + (V jstar - V₀ jstar) := by abel
+    rw [heq]
+    exact (norm_add_le _ _).trans (add_le_add (norm_sub_le _ _) le_rfl)
+  nlinarith [htri, hZX, hZ0, hjstar, hq0, hΔV, hLV0]
+
 end VeriStressGT.SelfAttention
