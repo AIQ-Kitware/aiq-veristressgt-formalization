@@ -19,14 +19,14 @@ declarations the axiom audit covers. The machine-readable mirror is
   1. `lake build` — completed successfully, no errors.
   2. no-`sorry`/`admit` scan over `ForMathlib LipschitzMargin SelfAttention IntervalBounds
      ExactMILP AlgebraicBoundary Verifier` — `OK: no sorry/admit tactics.`
-  3. axiom audit — `#print axioms` over all **94 audited declarations**
+  3. axiom audit — `#print axioms` over all **98 audited declarations**
      ([`AxiomAudit.lean`](AxiomAudit.lean)) shows only `{propext, Classical.choice, Quot.sound}`
      (no `sorryAx`, `native_decide`, or `ofReduceBool`).
 
 **Scope of the claim.** "Proved" here means the *published certificate theorems* (T1–T6
 templates) and, for the concrete constructions, the derivation of the sensitivity constants
 from construction-level quantities. It is **not** a claim that every *shipped* instance is
-certifiably robust — see the two findings below. The 94 audited declarations are exactly the
+certifiably robust — see the two findings below. The 98 audited declarations are exactly the
 list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by this record.
 
 ## Reference-comparison roadmap (REFERENCE-COMPARISON.md §6)
@@ -38,7 +38,7 @@ list in `AxiomAudit.lean`; nothing outside that list is asserted axiom-clean by 
 | B3 tightness as theorems | ✅ landed | `softmaxJac_opNorm_eq_half_witness`, `lipschitzWith_softmax_optimal` |
 | B4 model bridge + LM-4 | ✅ single-layer + list-level | `Layer.toAffLayer_eval`, `netMap_reverse_toAffLayer_eval`, `dccnn_robust_linf_box`, `dccnn_readout_robust` |
 | B5 process parity | ✅ this file | — |
-| B6 optional depth | ✅ Lemma 8 **core** | `attn_dominant_key_bound` (Lemma 8's convex-combination core; the ρ-bridge + Props 9–10 and A.7 prose remain — AUDIT4 J2/N2) |
+| B6 optional depth | ✅ Lemma 8 **as stated** | `attn_dominant_key_bound` (core) + `dominant_weight_bound` (ρ-bridge, eq. 59) + `attn_dominant_key_bound_rho` (Lemma 8 with the `1/(1+ρ)` conclusion); Props 9–10 remain — AUDIT4 N2 |
 
 ## Findings (one confirmed, one refuted — both machine-checked)
 

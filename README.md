@@ -69,7 +69,7 @@ and reading the code shows it computes something else.
 ## Status
 
 `lake build` is **green**; **zero `sorry`** in the production tree; an independent
-`#print axioms` sweep over all **94 audited declarations** ([`AxiomAudit.lean`](AxiomAudit.lean),
+`#print axioms` sweep over all **98 audited declarations** ([`AxiomAudit.lean`](AxiomAudit.lean),
 driven by [`scripts/check.sh`](scripts/check.sh)) shows only `{propext, Classical.choice,
 Quot.sound}`. The reproducible gate is a single command:
 

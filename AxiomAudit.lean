@@ -125,8 +125,12 @@ open VeriStressGT
 #print axioms SelfAttention.dotProductAttn_score_entry_dev
 #print axioms SelfAttention.dotProductAttn_pattern_stable
 
--- SelfAttention.DominantKey — B6 paper Lemma 8 dominant-key bound (1)
+-- SelfAttention.DominantKey — B6 paper Lemma 8 (core + as-stated, AUDIT4 N2) (5)
 #print axioms SelfAttention.attn_dominant_key_bound
+#print axioms SelfAttention.linAttnWeight_nonneg
+#print axioms SelfAttention.linAttnWeight_sum_one
+#print axioms SelfAttention.dominant_weight_bound
+#print axioms SelfAttention.attn_dominant_key_bound_rho
 
 -- IntervalBounds (4)
 #print axioms IntervalBounds.Layer.sound
