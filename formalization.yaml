@@ -310,8 +310,8 @@ edges:
     relaxation:
       code: ta1/VeriStressGT/src/VeriStressGT/robust_constructions/cnn/deep_contractive_cnn.py
       line: 64
-      informal: "σ̂ from 20-step power iteration is a LOWER bound on ‖W‖₂; unsafe direction, bounded by 10% slack. See edges Appendix A."
-    kind: numeric-estimate
+      informal: "TWO unsafe under-estimates of the true conv operator norm. (i) 20-step power iteration σ̂ is a LOWER bound on the reshaped-matrix norm (bounded by 10% slack — edges Appendix A). (ii) The reshaped-kernel norm (W.reshape(K,C·kH·kW), :67) is NOT the conv operator norm: for 3×3 kernels the true norm can be up to √9=3× larger (aligned per-position matrices; edges Appendix A′), unbounded and data-dependent (1×1 input_proj is exact). Settle by the Sedghi et al. 2019 DFT norm on the shipped weights. Strongest remaining DCCNN concern; the Lean hypothesis dccnn_robust_of_upper_bound (L≤L̂) is not discharged by σ_reshape."
+    kind: numeric-estimate + metric
     severity: high
   - id: dccnn-linf-sqrtd-metric
     card: ta1/VeriStressGT/cards/evaluation.yaml

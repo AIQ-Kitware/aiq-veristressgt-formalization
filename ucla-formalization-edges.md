@@ -39,7 +39,7 @@ Ordered by severity. `prose` tags (LM-#, SA-#, MILP-#, ED-#) point to the exact
 
 | id | Idealized assumption (theorem) | Prose | Empirical relaxation | Code site | Kind | Severity |
 |---|---|---|---|---|---|---|
-| `dccnn-L-power-iter` | Composition bound needs the **true** spectral norm `‖W_i‖₂` (T1′) | LM-1 | **20-step power iteration** `σ̂` — provably a *lower* bound on `‖W‖₂`, so the certified `L` under-estimates the true `L` (**unsafe direction**), bounded by the 10% slack. See **Appendix A**. | `deep_contractive_cnn.py:64` (`_spectral_norm_power_iter`, `n_iter=20`); used at `:225,237` | numeric-estimate | **high** (unsafe-but-bounded) |
+| `dccnn-L-power-iter` | Composition bound needs the **true** conv operator norm `‖convᵢ‖₂` (T1′) | LM-1 | **Two** unsafe under-estimates: (i) 20-step power iteration `σ̂` is a *lower* bound on the reshaped-matrix norm (**Appendix A**, bounded by 10% slack); (ii) the reshaped-kernel norm itself ≠ the true conv operator norm — for 3×3 kernels the true norm can be up to `√9 = 3×` larger (**Appendix A′**), unbounded and data-dependent. 1×1 input_proj is exact. | `deep_contractive_cnn.py:64,67` (`_spectral_norm_power_iter` reshape); used `:225,237` | numeric-estimate + metric | **high** (strongest remaining DCCNN concern) |
 | `dccnn-linf-sqrtd-metric` | Honest L∞-box threshold uses the read-out's **ℓ² operator norm** `‖w‖₂` *and* the `√d` conversion: `‖w‖₂·σλ^D·√d·ε` (T1′) | LM-4 | **NOT-EXPOSED-AS-SHIPPED (AUDIT4 J1).** `cert_bound = σλ^D·2ε·‖w‖₁` is norm-incoherent but safe: the shipped **uniform** read-out has `‖w‖₂=1/√flat_dim`, so the all-ℓ² certificate clears the margin ≈`8.8×`. Safe iff `√d·‖w‖₂ ≤ 2‖w‖₁` (`in_channels ≤ 4·channels`, all shipped). Latent risk only for a **non-uniform** read-out (`d>4`). Machine-checked: `dccnn_readout_robust`, `uniform_readout_code_bound_dominates`. | `deep_contractive_cnn.py:227` (`cert_bound`); box `:390-397` | norm-bookkeeping | low (not exposed) |
 | `milp-rmax-clamp` | Exact `r*` = min over **all** target classes, unbounded (T3) | MILP-1 | Search clamped to `t ≤ Rmax`; if `r* > Rmax`, returns a **lower bound**, still ships `ε=0.999·r*` | `exact_radius.py:232`; warn `:400,482` | regime-clamp | **high** |
 | `milp-incomplete-label` | Label sound only if MILP solved to **`OPTIMAL`** (T3, Thm A) | MILP-2 | `TIME_LIMIT` ⇒ `INCOMPLETE`; code itself warns label "NOT reliable" | `exact_radius.py:454-469,714` | budget-drop (self-declared) | **high** |
@@ -186,3 +186,60 @@ side-condition `L̂ ≥ ∏‖Wᵢ‖₂` (an **upper**-bound hypothesis). The p
 margin corollary then goes through unchanged; the honest cost is that the shipped
 `L̂` does **not** currently satisfy that hypothesis (it satisfies the reverse),
 which is the edge, quantified.
+
+## Appendix A′ — a *second*, distinct under-estimate: reshaped-kernel norm ≠ true conv operator norm
+
+A.1–A.5 assumed the target of the power iteration — the spectral norm of the
+**reshaped kernel** `W2d = W.reshape(K, C·kH·kW)` (`deep_contractive_cnn.py:67`) —
+*is* the layer's operator norm. For a **convolution as a linear map on the H×W×C
+image, it is not.** This is a separate gap from A.1–A.5 (which is about power-
+iteration *convergence* to the reshaped-matrix norm), raised by AUDIT4 (J1's caveat).
+
+**A′.1 The 1×1 input projection is exact.** `input_proj` is a `1×1` conv
+(`:127`): a single spatial position, so the conv is the pointwise map
+`I_{HW} ⊗ M` with `M` the `K×C` weight. Its operator norm equals `σ_max(M) =
+‖reshape‖₂` exactly, so `σ_proj` is the true norm (modulo A.1's convergence).
+
+**A′.2 The `kH×kW` contractive convs are not.** Write `M_{ij} = W[·,·,i,j]` for the
+per-position `K×C` channel matrices. Decomposing the conv as a sum of shifted
+pointwise maps (shifts are unitary under circular padding),
+
+    σ_conv  ≤  ∑_{i,j} σ_max(M_{ij})          (triangle; a valid *upper* bound),
+
+while the reshaped-matrix norm is the horizontal stack `[M_{00} | … | M_{k−1,k−1}]`,
+
+    max_{i,j} σ_max(M_{ij})  ≤  σ_reshape = σ_max([M_{00}|…])  ≤  √(∑_{i,j} σ_max(M_{ij})²)
+
+(the upper bound from `[M|…][M|…]ᵀ = ∑ M_{ij}M_{ij}ᵀ` and subadditivity of `λ_max`
+on PSD matrices). **Neither of `σ_conv`, `σ_reshape` bounds the other in general.**
+
+**A′.3 The gap is unsafe and up to `√(kH·kW)`.** Worst case: all spatial positions
+share the *same* channel matrix `M` (`σ_max = s`). Then at the DC frequency the
+conv symbol is `∑_{i,j} M_{ij} = (kH·kW)·M`, so **`σ_conv = kH·kW·s`**, whereas
+`σ_reshape = σ_max([M|…|M]) = √(kH·kW)·s`. Hence
+
+    σ_conv / σ_reshape  =  √(kH·kW)  =  3   for the shipped 3×3 kernels,
+
+in the **unsafe** direction: the code normalizes each conv so `σ_reshape = λ = 0.9`,
+but the true operator norm can be as large as `3·λ = 2.7`, and this compounds as
+`3^D` over depth. For Kaiming-*random* init the per-position matrices are nearly
+independent, so the DC alignment is weak and `σ_conv ≈ σ_reshape` in practice — but
+this is **data-dependent, not guaranteed**, and the shipped `L̂` is not proven to
+be the required *upper* bound on `∏‖convᵢ‖₂`.
+
+**A′.4 How to settle / close it.** Compute the *true* conv operator norms exactly by
+the DFT method (Sedghi–Gupta–Long, ICLR 2019, *The Singular Values of Convolutional
+Layers*): `σ_conv = max_ω σ_max(Ŵ(ω))` over the 2-D DFT `Ŵ(ω) = ∑_{i,j} M_{ij}
+e^{-2πi⟨ω,(i,j)⟩}` of the kernel, and certify against `∏ σ_conv` (or its upper
+bound `∏ ∑_{ij} σ_max(M_{ij})`) instead of `∏ σ_reshape`. On the shipped weights
+this is a few-line NumPy check per conv (`≤16×16×3×3`); the environment for this
+formalization pass has no NumPy, so the numeric magnitude on the *actual* kernels is
+left as the recommended empirical check to attach to the UCLA conversation.
+
+**A′.5 Formalization seam.** This is the same `L ≤ L̂` upper-bound hypothesis as A.5,
+but now the deficit has *two* independent sources — power-iteration convergence
+(A.1) and reshaped-vs-true (A′.2/A′.3) — both biased unsafe. The Lean side already
+carries the honest hypothesis: `LipschitzMargin.dccnn_robust_of_upper_bound` takes
+`hupper : L ≤ L̂` explicitly, and the shipped `L̂ = σ_reshape` product is not proven
+to satisfy it. This edge (not the refuted `dccnn-linf-sqrtd-metric`) is the strongest
+remaining DCCNN concern.
